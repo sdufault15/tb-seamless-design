@@ -1,0 +1,268 @@
+---
+title: "Seamless Phase IIB/C Simulation Study"
+author: "Suzanne Dufault"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      fig.path = "../graphs/" )
+
+library(tidyverse)
+library(here)
+```
+
+# Document Outline {.tabset}
+
+Borrowing significantly from Nick Paton's "UNITE4TB seamless trial design NP 25 Jan 2022"
+
+## Notation
+
+
+
+Notation:
+
+| Symbol | Meaning |
+|----:|:-----|
+| $N = \sum_{k=1}^Kn_k$ | Total sample size of a simulated dataset |
+| $n_k = \sum_{d=1}^Dn_d$ | Sample size assigned to regimen $k = 1,\ldots, K$ |
+| $n_d$ | Sample size assigned to duration $d$ within each regimen, $d = 1, \dots, D$ |
+| $n_{sim}$ | Number of repetitions used; the simulation sample size |
+| $i=1,\ldots, n_{sim}$ | Indexes the repetitions of the simulation |
+<!-- | $\theta$ | An estimand (conceptually); also true value of the estimand |     -->
+<!-- | $n_{obs}$ | Sample size of a simulated dataset |     -->
+<!-- | $\hat{\theta}$ | the estimator of $\theta$ |     -->
+<!-- | $\hat{\theta}_i$ | the estimate of $\theta$ from the $i$th repetition |    -->
+<!-- | $\bar{\theta}$ | the mean of $\hat{\theta}_i$ across repetitions |     -->
+<!-- | $Var(\hat{\theta})$ | the true variance of $\hat{\theta}$, which can be estimated with large $n_{sim}$ |     -->
+<!-- | $\widehat{Var}(\hat{\theta}_i)$ | an estimate of $Var(\hat{\theta})$from the $i$th repetition |    -->
+<!-- | $\alpha$ | the nominal significance level |    -->
+<!-- | $p_i$ | the p-value returned by the $i$th repetition |     -->
+
+## Planning 
+
+<!-- + Specific aims of the simulation study -->
+
+The aims of this simulation study are to:
+
++ Explore various data-generating mechanisms for simulated seamless Phase IIb/c data.    
+    + Does changing assumptions about data-generating mechanisms change the decisions made for treatment selection? Drastically? When?
++ Explore the performance of (Bayesian) methods for regimen selection in Phase IIb trials.    
+    + Which is more robust to differences in data-generation or data with skewness/outliers?
++ Identify what questions can be asked and answered with a sample size of 20-40 subjects per arm. 
+
+## Data-generating mechanisms
+
+For this simulation study we will specify a parametric, random effects model as the data-generating mechanism, with parameter estimates from existing data serving as the "true" values of the estimands. We will work through a range of simple to complex models. 
+
+**Factors to be varied:**
+
++ $n_{obs} = \sum_k n_k$, where $n_k$ is the number of participants in treatment regimen $k$ ($k = 1,\ldots,K$).     
+  + Assume: $n_k = \frac{n_{obs}}{K}$ and let $n_k$ range from $n = \{20, 30, 40\}$ 
+  
++ $K$ number of regimens    
+  + Assume $K = 5$
+
++ $D$ durations for each regimen    
+  + Assume $d =$ 2 months, 3 months, 4 months   
+  + Assume $n_{k,2mo} = n_{k,3mo} = n_{k,4mo} = \frac{n_k}{D}$  
+  + **Monotonicity Assumptions:** with respect to log10(TTP), are we assuming that longer durations have greater effect? It seems more plausible to have a threshold-style simulation model. How will we set this threshold?
+  
++ For each treatment arm, we will do a handful of hypothetical intervention effect sizes. These will be specified as percent change in slope *as compared to the control*.   
+  + $\{10\%,20\%,30\%,40\%\}$ (even relative increases by treatment arm)
+  + $\{0\%,0\%,0\%,0\%\}$ (all are equivalent to the control arm, this is one type of null)
+  + $\{-10\%,10\%,35\%,40\%\}$ (two are near the control arm, two are better. Can we distinguish the best?)
+  + $\{35\%, 37\%, 39\%, 41\%\}$
+  
++ $weeks$ the number of weeks under observation     
+  + currently planning for 8 weeks    
+  + considering 6 weeks (RAD-TB)    
+
+### Models
+
+Assuming the relationship between the log10(TTP) and weeks since randomization (for individuals assigned to a single intervention) can be simply described as:
+
+1. A linear random intercept model, where the log10(TTP) for each individual $i$ at time $t$ can be expressed as:
+
+\[\log_{10}(TTP_{it}) = (\beta_0 + \beta_{0i}) + \beta_1\cdot\text{weeks}_t + \beta_2\cdot\mathbb{I}\{\text{arm}_i = 2\}\cdot\text{weeks}_t + \ldots + \beta_K\cdot\mathbb{I}\{\text{arm}_i = K\}\cdot\text{weeks}_t + e_{it}\]
+
+
+2. A linear random intercept, random slope model, where the log10(TTP) for each individual $i$ at time $t$ can be expressed as:
+
+\[\log_{10}(TTP_{it}) = (\beta_0 + \beta_{0i}) + (\beta_1 + \beta_{1i})\cdot\text{weeks}_t + \beta_2\cdot\mathbb{I}\{\text{arm}_i = 2\}\cdot\text{weeks}_t + \ldots + \beta_K\cdot\mathbb{I}\{\text{arm}_i = K\}\cdot\text{weeks}_t + e_{it}\]
+
+where
+
++ $\beta_0$ is the mean $\log_{10}(TTP)$ at baseline
++ $\beta_1$ is the mean change in $\log_{10}(TTP)$ for a unit change in weeks since randomization for those in the control group
++ $\beta_k$ is the difference in mean change in $\log_{10}(TTP)$ for a unit change in weeks since randomization for those in arm $k>1$ compared to those in the control group.
++ $\beta_{0i}$ is the random intercept for each individual
++ $\beta_{1i}$ is the random slope for each individual
++ $e_{it}$ is the random variability/measurement error for the measurement on individual $i$ at time $t$.
+
+Note: $\beta_{0i} \sim N(0,\sigma_{g_1}^2)$, $\beta_{1i} \sim N(0,\sigma_{g_2}^2)$, $\rho = \text{Cor}(\beta_{0i}, \beta_{1i})$, $e_{it} \sim N(0,\sigma_e)$.
+
+<!-- ## Estimand/target of analysis -->
+
+<!-- Based on the simulated dataset, we will rank the effect sizes of each of the $k = 1,...,K$ regimens ($A_k$) such that: -->
+
+<!-- \[A_{(1)} = \max(A_1, A_2, \ldots, A_K)\] -->
+<!-- \[\vdots\] -->
+<!-- \[A_{(K)} = \min(A_1, A_2, \ldots, A_K)\] -->
+
+<!-- In other words (and unlike standard order statistics which rank low to high), the best regimen (the largest change in TTP) is denoted $A_{(1)}$ and the worst regimen (the lowest change in TTP) is denoted $A_{(K)}$. The estimated ranked regimens, based on the point estimates from simulated datasets are denoted $A_{(\hat{k})}$. -->
+
+<!-- + Define estimands and/or other targets of the simulation study. -->
+
+<!-- | Target | Description |  -->
+<!-- | :----: | :---------- | -->
+<!-- | $r = \{A_{(1)}, A_{(2)}, A_{(3)}, A_{(4)}, A_{(5)}\}$ | The first target is the ranking of the regimens, from best to worst. | -->
+<!-- | $r_{k'} = \{A_{(1)},\ldots, A_{(k')}\}$ | The second target is a subset of the top $k'$ ranked regimens ($k'\leq K$). | -->
+<!-- | $\Delta = \mu_A - \mu_{A'}, A\neq A'$ | The third target is the difference in slope between two arms. | -->
+
+
+<!-- ## Methods -->
+
+<!-- + Identify methods to be evaluated and consider whether they are appropriate for estimand/target identified. For method comparison studies, make a careful review of the literature to ensure inclusion of relevant methods. -->
+
+<!-- For each individual $i$ at time $t$, we assume that $\log_{10}$(dtp) can be modeled as a function of weeks since randomization and treatment arm.  -->
+<!-- <!-- For now, we assume random effects ($\beta_{0i}$) such that individual's baseline $\log_{10}(dtp_i)$ are normally distributed around some mean $\log_{10}(dtp) = \beta_0$ and their slopes ($\beta_{ki}$ are normally distributed around some mean $\beta_{k}$ within a certain treatment arm ($k \in \{1,2,3,4,5\}$).   --> -->
+
+<!-- <!-- \[\log_{10}(dtp) \sim N(\mu,\sigma^2)\] --> -->
+
+<!-- \[\log_{10}(dtp_{it}) = \beta_0 + \beta_1\times weeks_{t} + \beta_2\mathbb{I}(A_{it} = 2)\times weeks_{t} + \beta_3\mathbb{I}(A_i = 3)\times weeks_{t} + \beta_4\mathbb{I}(A_i = 4)\times weeks_{t} + \beta_5\mathbb{I}(A_i = 5)\times weeks_{t} + \beta_{0i} + \beta_{1i} \times weeks_t\] -->
+
+<!-- E.g., for those in the control arm: -->
+
+<!-- \[\log_{10}(dtp_{it}) = (\beta_0 + \beta_{0i}) + (\beta_1 + \beta_{1i}) weeks_{it} \] -->
+
+<!-- For those in treatment group two: -->
+
+<!-- \[\log_{10}(dtp_{it}) = (\beta_0 + \beta_{0i}) + (\beta_1 + \beta_{1i} + \beta_2)\times  weeks_{it} \] -->
+
+<!-- For those in treatment group $k$.: -->
+
+<!-- \[\log_{10}(dtp_{it}) = (\beta_0 + \beta_{0i}) + (\beta_1 + \beta_{1i} + \beta_k )\times  weeks_{it} \] -->
+
+
+<!-- ## Performance measures -->
+
+<!-- + List all performance measures to be estimated, justifying their relevance to estimands or other targets.     -->
+<!-- + For less-used performance measures, give explicit formulae for the avoidance of ambiguity.     -->
+<!-- + Choose a value of $n_{sim}$ that achieves acceptable Monte Carlo SE for key performance measures. -->
+
+<!-- | Shorthand | Estimand/Target | Calculation |  Description |  -->
+<!-- | :-------: | :-------------: | :---------- | :----------- | -->
+<!-- | $p_1$ | Target 1 | $P(A_{(1)} = A_{(\hat{1})}) = \frac{1}{n_{sim}}\sum_{i = 1}^{n_{sim}} \mathbb{I}\left(A_{(1)} = A_{(\hat{1})}\right)$ | Given our small sample sizes, we want to know how often the true best regimen is ranked as the best regimen. | -->
+<!-- | $p_2$ | Target 2 | $P(A_{(1)} \in \{A_{(\hat{1})}, ..., A_{(\widehat{k'})} \}) = \frac{1}{n_{sim}}\sum_{i = 1}^{n_{sim}} \mathbb{I}\left(A_{(1)} \in \{A_{(\hat{1})},\ldots, A_{(\widehat{k'})}\}\right)$ | Given our small sample sizes, we want to know how often the best regimen appears in the top $(k') \leq (K)$ ranks | -->
+<!-- | $p_3$ | Target 1 | $P(A_{(\hat{1})} = \max\{A_{(\hat{1})},A_{(\hat{2})},\ldots, A_{(\hat{k})}\}) = \frac{1}{n_{chain}}\sum_{j = 1}^{n_{chain}} \mathbb{I}\left(A_{(\widehat{1}), MCMC_j} = A_{(\hat{1})}\right)$ | Each Bayesian model is fitted with an MCMC chain. We can use the chain to directly evaluate posterior distributions of interest. For example, "What is our percent confidence that the best estimated arm is better than all other arms?" | -->
+<!-- | $p_4$ | Target 2 | $P(A_{(1)} \in \{A_{(\hat{1})}, ..., A_{(\widehat{k'})} \}) = \frac{1}{n_{chain}}\sum_{j = 1}^{n_{chain}} \mathbb{I}\left(A_{(1)} \in \{A_{(\hat{1}), MCMC_j},\ldots, A_{(\widehat{k'}), MCMC_j}\}\right)$  | What is our percent confidence that the true best arm is contained in a subset of size $k'$ of top ranked arms? |    -->
+<!-- | $p_5$ | Target 3 | $\mathbb{E}[\mu_A - \mu_{A'}] = \frac{1}{n_{chain}}\sum\limits_{j}^{n_{chain}}\hat{\mu}_{A,mcmc_j} - \hat{\mu}_{A',mcmc_j} , A\neq A'$) | This is the posterior distribution of the difference in slopes between two distinct arms. From this, we can ask a number of questions, including, is it credible that the slopes are different? Is it credible that the slopes are more than X% different? etc.  | -->
+<!-- | $p_6$ | Target 2 | $P(A_{\widehat{(1)}} \in \{A_{(1)},\ldots, A_{(k')} \} = \frac{1}{n_{sim}}\sum_{i = 1}^{n_{sim}} \mathbb{I}\left(A_{\widehat{(1)},i} \in \{A_{(1)},\ldots, A_{(k')}\}\right)$) | Given our small sample sizes, how often is the best estimated arm is one of the true top $k'$ arms? | -->
+
+<!-- ## Coding and execution -->
+
+<!-- + Separate scripts used to analyze simulated datasets from scripts to analyze estimates datasets.    -->
+<!-- + Start small and build up code, including plenty of checks.     -->
+<!-- + Set the random number seed once per simulation repetition.     -->
+<!-- + Store the random number states at the start of each repetition.    -->
+<!-- + If running chunks of the simulation in parallel, use separate streams of random numbers. -->
+
+<!-- **Munge** -->
+
+<!-- | Name | Description | -->
+<!-- | :--- | :---------- | -->
+<!-- | `00_run-all.R` | This is the primary file that calls all subsequent files and performs all steps of the simulation study in the proper order | -->
+<!-- | `01_simulate-data.R` | This file simulates the data. It returns two objects: 1) a list of simulated datasets and 2) a dataframe with the "states" data (recording random seed, etc.) | -->
+<!-- | `02_brms-models-on-sim-data_null-condition.R` | This file sets up the brms models to run on all 1000 x 3 (sample sizes) datasets when the expected slope difference between the control arm and the treatment arms is 0% |  -->
+<!-- | `03_brms-models-on-sim-data_even-condition.R` | This file sets up the brms models to run on all 1000 x 3 (sample sizes) datasets when the expected slope difference between the control arm and the treatment arms is 10%, 20%, 30%, and 40% |  -->
+<!-- | `04_brms-models-on-sim-data_clustered-high-condition.R` | This file sets up the brms models to run on all 1000 x 3 (sample sizes) datasets when the expected slope difference between the control arm and the treatment arms is {35%, 37%, 39%, 41%} |  -->
+<!-- | `05_brms-models-on-sim-data_clustered-highlow-condition.R` | This file sets up the brms models to run on all 1000 x 3 (sample sizes) datasets when the expected slope difference between the control arm and the treatment arms is {-10%, 10%, 35%, 40%} |  -->
+
+<!-- **Model results** -->
+
+<!-- The stored brms objects generated by analyzing the simulated datasets are stored in the `data/bayes-generated` folder. -->
+
+<!-- Because of the size of these objects, we had to save them in segments. -->
+
+<!-- | Name | Description | -->
+<!-- | :--- | :---------- | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-20.RData` | The BRMS model results when fitting to the simulated data with a sample size of 20 per arm and the null condition (i.e., generated by file `02_brms-models-on-sim-data_null-condition.R`) | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-20_even-condition-YYY.RData` | The BRMS model results when fitting to the simulated data (simulations YYY-100 to YYY) with a sample size of 20 per arm and the even condition (i.e., generated by file `03_brms-models-on-sim-data_even-condition.R`) | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-30_even-condition-YYY.RData` | The BRMS model results when fitting to the simulated data (simulations YYY-100 to YYY) with a sample size of 30 per arm and the even condition (i.e., generated by file `03_brms-models-on-sim-data_even-condition.R`) | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-40_even-condition-YYY.RData` | The BRMS model results when fitting to the simulated data (simulations YYY-100 to YYY) with a sample size of 40 per arm and the even condition (i.e., generated by file `03_brms-models-on-sim-data_even-condition.R`) | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-20_highlow-condition-YYY.RData` | The BRMS model results when fitting to the simulated data (simulations YYY-100 to YYY) with a sample size of 20 per arm and the highlow condition (i.e., generated by file `05_brms-models-on-sim-data_highlow-condition.R`) | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-20_highlow-condition-YYY.RData` | The BRMS model results when fitting to the simulated data (simulations YYY-100 to YYY) with a sample size of 20 per arm and the highlow condition (i.e., generated by file `05_brms-models-on-sim-data_highlow-condition.R`) | -->
+<!-- | `[DATE]_simulated-lmm_intercept-only_lod-25_nk-20_highlow-condition-YYY.RData` | The BRMS model results when fitting to the simulated data (simulations YYY-100 to YYY) with a sample size of 20 per arm and the highlow condition (i.e., generated by file `05_brms-models-on-sim-data_highlow-condition.R`) | -->
+
+
+<!-- **Helper functions** -->
+
+<!-- | Name | Description | -->
+<!-- | :--- | :---------- | -->
+<!-- | `lib/df-sim-function.R` | This is a simple function that takes parameter inputs (weeks, $n_k$, etc.) and returns a list of simulated datasets for each parameter value of interest | -->
+<!-- | `lib/df-sim-wrapper-function.R` | This wraps around the `df-sim-function.R` and allows for more efficient generation of the simulated datasets. | -->
+<!-- | `lib/df_evaluate_rank-function.R` | This takes the conditional estimated slope coefficients from the brms models and evaluates 1) whether the best arm has been identified as the best arm, and 2) returns the rank of 4 arms. | -->
+
+
+
+<!-- ## Analysis -->
+
+<!-- + Conduct exploratory analysis of results, particularly graphical exploration.     -->
+<!-- + Compute estimates of performance and Monte Carlo SEs for these estimates. -->
+
+
+<!-- **Exploratory analyses** -->
+
+<!-- | Name | Description | -->
+<!-- | :--- | :---------- | -->
+<!-- | `reports/visualizing-simulated-data.Rmd` | A report for visualizing the simulated datasets. This is useful for ensuring the simulated data looks like plausible trial data. | -->
+<!-- | `reports/examining-simulation-results.Rmd` | A report presenting the simulation study results. |  -->
+
+<!-- **Estimates of performance** -->
+
+<!-- | Name | Description | -->
+<!-- | :--- | :---------- | -->
+<!-- | `munge/06_ranking-brms-results` | This script calls on helper function `df-evaluate_rank-function.R` to perform more frequentist-style evaluations of the simulation results. | -->
+<!-- | `munge/07_ranking-brms-results_bayesian` | This script calls on helper functions `df_extract-mcmc-slopes-function.R` and `df_best-v-rest-bayes-function.R` to perform more bayesian-style evaluations of the simulation results. *These more closely mimic what will be performed in the planned analysis of the trial data.* | -->
+
+<!-- **Helper functions** -->
+
+<!-- | Name | Description | -->
+<!-- | :--- | :---------- | -->
+<!-- |`lib/df-evaluate_rank-function.R` | Takes model results and returns a binary indicator as to whether the true best arm is equivalent to the estimated best arm (performance measure $p_1$ ) and returns the numeric rank, which allows for estimation of performance measure $p_2$ | -->
+<!-- | `lib/df_extract-mcmc-slopes-function.R` | This extracts the MCMC estimates of the arm-specific slopes so that they can be fed into other performance evaluation functions. | -->
+<!-- | `lib/df_best-v-rest-bayes-function.R` | This uses the extracted MCMC estimates of the arm-specific slopes to evaluate how often the true best arm is estimated to have a larger slope than all other arms. | -->
+
+
+<!-- ## Reporting -->
+
+<!-- + Describe simulation study using ADEMP structure with sufficient rationale for choices. -->
+<!-- + Structure graphical and tabular presentations to place performance of competing methods side-by-side.  -->
+<!-- + Include Monte Carlo SE as an estimate of simulation uncertainty.     -->
+<!-- + Publish code to execute the simulation study including user-written routines.    -->
+
+<!-- ## Appendix -->
+
+<!-- ### Notes from previous emails -->
+
+<!-- A simple procedure like `select a subset of the X best regimens (efficacy & safety) from a pool of regimens' to take forward to IIC is what we want. We can run simulations to identify an appropriate sample size (e.g. probability that we select best regimen is $> 0.95$ under appropriate assumptions), but I haven’t yet found a suitable selection procedure. -->
+
+<!-- I think a Bayesian analysis will be well suited to the sort of decision-making that we will need moving from IIB to IIC – I am thinking something like $P$(subset of size X contains best regimen given observed data) as a function of X. We can pick a simple binary `efficacy' outcome (e.g. culture conversion by 8 weeks) which is sufficient to capture treatment response, and we can pick a simple binary safety outcome (occurrence of grade 3+ AEs, or related AEs, etc.). So we could consider efficacy and safety separately (separate subsets for efficacy and safety), or as a bivariate distribution. -->
+
+<!-- + the foundations for this kind of problem are discussed in most non-parametrics book as they do discuss the distribution of order statistics. -->
+
+<!-- For simulations: linear mixed effects models with adjustment for limits of detection several times        -->
+
+<!-- + The surge function has been used for parametric survival model for time to culture conversion (https://pubmed.ncbi.nlm.nih.gov/29917079/ ), but that is not what you are after since your objective is based on quantitative TTP over time.    -->
+<!-- + ‘My’ model for this (https://pubmed.ncbi.nlm.nih.gov/28961790/ , https://pubmed.ncbi.nlm.nih.gov/31840278/ ) is a bit complex to set up simulations with. I agree that a linear or bi-linear model (like the ones suggested by Burger https://pubmed.ncbi.nlm.nih.gov/30027676/ ) should be useful for clinical trial simulations. -->
+<!-- + It is crucial that the model handles the detection limit! In mixed-effects models NONMEM language we talk about the M3 method where you have a likelihood component quantifying the likelihood of being at the wrong side to the limit for each sample time point (https://pubmed.ncbi.nlm.nih.gov/19452283/  , https://pubmed.ncbi.nlm.nih.gov/11768292/  ). I do not have a published example on this applied to TB – Gerry? You do not want to simulate a lot of data between 25 and 42 days because in practice very few samples come back with that type of TTPs.    -->
+<!-- + A quick read on Wikipedia, it looks like tobit regression is doing pretty much what M3 does so seems suitable to me! -->
+
+
+
