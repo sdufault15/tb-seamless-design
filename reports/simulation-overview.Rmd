@@ -21,9 +21,25 @@ library(here)
 
 Borrowing significantly from Nick Paton's "UNITE4TB seamless trial design NP 25 Jan 2022"
 
+Let $X$ denote the treatment arm where $X = 1$ is the control arm, and $X = 2,\ldots, K$ denotes distinct regimens being tested. Let $W$ denote the treatment duration (in months) with $W = w_1,\ldots, w_D$.
+
+Assume a balanced design such that $N$ patients are randomized across the $K$ arms and $D$ durations. Therefore, for each arm and duration, there are $n_{k,d}$ patients. 
+
+Let $Y$ be the continuous outcome of $\log_{10}(TTP)$. Let $y_{i,t}$ denote the outcome measured for individual $i$ at time $t$.
+
+We'll use a Normal-Normal Bayesian model framework:
+
+\[\text{TO BE ADDED}\]
+
+**The aim of this trial is to, over a range of $K$ new treatments and $D$ durations, select those that prove sufficiently efficacious (?) and drop those that are unexpectedly ineffective.**
+
+Stopping criteria:
+
+\[\text{TO BE ADDED}\]
+
+
+
 ## Notation
-
-
 
 Notation:
 
