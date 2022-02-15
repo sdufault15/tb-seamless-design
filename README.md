@@ -4,4 +4,4 @@
 
 | filename | description | input | output | 
 |:--------:|:------------|:-----:|:------:|
-|coef-function.R | This estimates the coefficient values for the parametric survival model based on the inputs | reference survival function `s.1` = $S_1(t)$, regimen-specific survival function `s.k` = $S_k(t)$, weeks post-treatment for reference survival function `t.1`, duration of regimen `d`, maximum duration of regimen `max.d.k`, shape parameter `p`, and duration effect. | $\lambda_1, \lambda_k, \log HR, g(d), \beta_k$ |
+|coef-function.R | This estimates the coefficient values for the parametric survival model based on the inputs | <ul><li>`s.1` reference survival function</li><li>`s.k` regimen-specific survival function</li><li>`t.1` weeks post-treatment for reference survival function</li><li>`d` duration of regimen</li><li>`max.d.k` maximum duration of regimen</li><li>`p` shape parameter</li><li>`duration.effect` duration effect</li> </ul> | $\lambda_1, \lambda_k, \log HR, g(d), \beta_k$ |
