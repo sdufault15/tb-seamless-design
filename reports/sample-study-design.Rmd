@@ -153,7 +153,7 @@ For now, we can start with a single wave of regimens. Can later incorporate mult
 
 where $Z$ denotes days since randomization for measurement $j = 1,\ldots,9$ and $X$ denotes assigned regimen, $X = 1,\ldots, K$.
 
-## Survival {.tabset .tabset-pills}
+## Survival 
 
 To simulate censored survival data, we must specify two survival distributions:
 
@@ -162,47 +162,6 @@ To simulate censored survival data, we must specify two survival distributions:
     + For now, we will assume there is no loss to follow-up. Therefore, the only non-informative censoring that occurs is administrative end of follow-up.
 
 For now, each patient enters the risk set for adverse survival outcomes *after* they have completed treatment. **We are assuming all individuals finish treatment.** Each individual is followed for 52 weeks post-randomization. Therefore, their maximum survival follow-up time is: 52 weeks - duration of intervention (weeks).
-
-<!-- ### Exponential Hazards Model -->
-
-<!-- Let's assume that $t\sim\text{Exp}(\lambda)$, where $\lambda = h(t|X)$ and $t$ is week since end of treatment. -->
-
-<!-- Then the hazard function can be written as: -->
-
-<!-- \[\begin{align} -->
-<!-- \log[h(t|X)] &= \log(h_0) + \beta_1X_1 + \ldots + \beta_pX_p \\ -->
-<!-- \log[h(t|X)] &= \beta_0 + \beta_1X_1 + \ldots + \beta_pX_p  -->
-<!-- \end{align}\] -->
-
-<!-- In our setting, we will consider the duration and the regimen as the covariates of interest for the linear predictor. As such, we will simulate from the following log-hazard function: -->
-
-<!-- \[\log[h(t|x)] = \beta_0 + \beta_1\times duration + \beta_2 \times \mathbb{I}(\text{regimen} = 2) + \ldots + \beta_K \times \mathbb{I}(\text{regimen = K})\] -->
-
-<!-- where: -->
-
-<!-- + $\beta_0$ is the log-hazard in the control regimen with a 6-month duration -->
-<!--   + For now: $\beta_0 = \log(0.03)$ -->
-<!-- + $\beta_1$ is the change in log-hazard (i.e., log HR) for each week decrease in duration of regimen -->
-<!--   + Assume: monotonic, longer duration decreases hazard of relapse -->
-<!--   + $\beta_1 = \log(0.9)$ -->
-<!-- + $\beta_k, k = 2,...,K$ is the change in log-hazard for "novel" regimen $k$ compared to the control  -->
-<!--   + Note: control is always a 6-month regimen -->
-<!--   + For now, assume $\beta_k = \log(2), k = 2,...,K$ -->
-
-<!-- #### Parameterizing the model -->
-
-<!-- ```{r exponential-function, eval = FALSE} -->
-<!-- exponential_function <- function(lambda, surv.prop, t){ -->
-<!--   exp(-lambda*t) - surv.prop -->
-<!-- } -->
-
-<!-- surv.prop = 0.96 -->
-<!-- t = 12 -->
-<!-- uniroot(exponential_function, -->
-<!--         interval = c(0,5), -->
-<!--         surv.prop = surv.prop, -->
-<!--         t = t) -->
-<!-- ``` -->
 
 ### Weibull Proportional Hazards Model
 
@@ -257,8 +216,6 @@ S(13) &= 1-F(13) \\
 \end{align}\]
 
 For each of our specified survival/failure rates, setting $p = 0.425$ allows approximately 75% of failure to occur in the first 13 weeks.
-
-<!-- > (Table 2)[https://www.nejm.org/doi/full/10.1056/NEJMoa2033400]. 3.3% of participants in the HRZE group had an unfavorable outcome related to tuberculosis at 12 months post-randomization.  -->
 
 ```{r include = FALSE}
 
