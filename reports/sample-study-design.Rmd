@@ -9,7 +9,7 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,
-                      message = FALSE,
+                      message = FALSE, 
                       warning = FALSE,
                       fig.path = "../graphs/exploratory/")
 library(here)
@@ -17,6 +17,8 @@ library(tidyverse)
 library(knitr)
 library(kableExtra)
 library(simsurv)
+library(survminer)
+library(latex2exp)
 ```
 
 ```{r initial-data-setup}
@@ -88,28 +90,20 @@ df_temp <- data.frame(
 
 ## Notation 
 
-<!-- | Symbol | Definition | -->
-<!-- |:------:|:-----------| -->
-<!-- | $X$    | R.V. regimen, $x = 1,\ldots,K$ | -->
-<!-- | $Y$    | R.V. log10(TTP), $y \in [\log_{10}1, \log_{10}\text{LOD})$ | -->
-<!-- | $D$    | R.V. duration (weeks), $d = \{8,10,12,14,16,24\}$ | -->
-<!-- | $T$ | continuous r.v. trial time (weeks) $\tau \in [0, T_{\tau}]$ | -->
-<!-- | $T_t$ | continuous r.v. patient time (weeks) $t \in [0,52]$ | -->
-
 There are two distinct timelines that we will need to be aware of for simulating: 
 
 1. Trial time: $\tau = 0, \ldots, T_{\tau}$ weeks
     + The interim and final analyses are scheduled according to trial time.
     + Time of relapse occurrence with respect to trial time will be necessary for interim and final analyses.
-2. Patient time: $t = 0,\ldots T_t = 365$ days.
+2. Patient time: $t = 0,\ldots T_t = 52$ weeks.
     + For each patient, patient time starts at baseline and counts forward their weeks since randomization. Each patient is followed for a total of 52 weeks. Events after 52 weeks of patient follow-up are censored.
-    + Patient time is particularly useful for the log10(TTP) analyses from the first *56* days of observation after randomization.
+    + Patient time is particularly useful for the log10(TTP) analyses from the first *8* weeks of observation after randomization.
     + Patient time is also useful for determining a patient's "at risk" status for relapse, since relapse can only occur once treatment is complete. 
   
 
 Hypothetical Data:
 
-| Patient ID | Date Enrollment | Regimen | Duration (days) | Days since randomization | TTP | log10(TTP) | Relapse? | Date of Relapse |
+| Patient ID | Date Enrollment | Regimen | Duration (weeks) | Weeks since randomization | TTP | log10(TTP) | Relapse? | Date of Relapse |
 |:-----------|:----------------|:--------|:---------|:------------------------|:---|:---|:---|:---|
 | id001 | 2022-01-01 | HRZE | 24 |  0 | 10 | 1.00 | No | NA |
 | id001 | 2022-01-01 | HRZE | 24 |  1 | 13 | `r round(log10(13),2)` | No | NA |
@@ -122,15 +116,15 @@ Hypothetical Data:
 
 Hypothetical Data (transformed to our time scales):
 
-| Patient ID | Day of Enrollment ($\tau_0$) | Regimen | Duration (days) | Days since randomization ($t$) | TTP | log10(TTP) | Relapse? | Day of Relapse ($\tau_y$) |
+| Patient ID | Day of Enrollment ($\tau_0$) | Regimen | Duration (weeks) | Weeks since randomization ($t$) | TTP | log10(TTP) | Relapse? | Day of Relapse ($\tau_y$) |
 |:-----------|:----------------|:--------|:---------|:------------------------|:---|:---|:---|:---|
-| id001 | 0 | HRZE | 168 |  0 | 10 | 1.00 | No | NA |
-| id001 | 0 | HRZE | 168 |  7 | 13 | `r round(log10(13),2)` | No | NA |
-| id001 | 0 | HRZE | 168 |  13 | 14 | `r round(log10(14),2)` | No | NA |
-| id001 | 0 | HRZE | 168 | $\vdots$ | $\vdots$ | $\vdots$ | No | NA |
-| id002 | 1 | TRT1 | 56 |  0 | 11 | `r round(log10(11),2)` | Yes | 122 |
-| id002 | 1 | TRT1 | 56 |  6 | 12.7 | `r round(log10(12.7),2)` | Yes | 122 |
-| id002 | 1 | TRT1 | 56 |  16 | 14.8 | `r round(log10(14.8),2)` | Yes | 122 |
+| id001 | 0 | HRZE | 24 |  0 | 10 | 1.00 | No | NA |
+| id001 | 0 | HRZE | 24 |  1 | 13 | `r round(log10(13),2)` | No | NA |
+| id001 | 0 | HRZE | 24 |  1.85 | 14 | `r round(log10(14),2)` | No | NA |
+| id001 | 0 | HRZE | 24 | $\vdots$ | $\vdots$ | $\vdots$ | No | NA |
+| id002 | 1 | TRT1 | 8 |  0 | 11 | `r round(log10(11),2)` | Yes | 122 |
+| id002 | 1 | TRT1 | 8 |  0.95 | 12.7 | `r round(log10(12.7),2)` | Yes | 122 |
+| id002 | 1 | TRT1 | 8 |  2.2 | 14.8 | `r round(log10(14.8),2)` | Yes | 122 |
 | $\vdots$ | $\vdots$ | $\vdots$ | $\vdots$ |  $\vdots$ | $\vdots$ | $\vdots$ | $\vdots$ | $\vdots$ |
 
 
@@ -139,8 +133,8 @@ We effectively need to simulate the following:
 1. Random enrollment date $\tau_{0i}$ for each participant $\tau_{0i} \in [0,T_{\tau}]$. This will affect who is included in interim and final analyses.
     + Individuals will be concurrently randomized to regimens and durations.
     + Assume a random enrollment rate of 10 participants per week.
-2. log10(TTP) as a function of participant days since randomization ($t \in [0,56]$) and regimen.   
-3. Relapse as a function of regimen and duration (assuming monotonic relationship) for $t \in [57, 365]$.
+2. log10(TTP) as a function of participant weeks since randomization ($t \in [0,8]$) and regimen.   
+3. Relapse as a function of regimen and duration (assuming monotonic relationship) for $t \in (8, 52]$.
 
 For now, we can start with a single wave of regimens. Can later incorporate multiple regimen waves.
 
@@ -364,57 +358,162 @@ Now, we specify the regimen characteristics. Let $S_k(t)$ denote the survival ra
 | | 5 | minimal, $S_5(52-12) = S_1(26)$ | |
 
 
+
+Let's solve for $\beta_1,\ldots,\beta_4$ in the following parametric model (assuming a 1 month decrease in duration results in a 5% increase in the hazard, $\beta_K = \log(1.05)$):
+
+\[\begin{align}
+\log[h(t|\text{regimen}, g(d))] &= \log(0.425 t^{0.425-1}) + \log\lambda_1 + \beta_1 \times \mathbb{I}(\text{regimen} = 2) + \cdots + \beta_{K-1} \times \mathbb{I}(\text{regimen = K}) \\
+& \hspace{1em}+ \log(1.05)\times g(d) \\
+g(d) &= \max(d_k) - d 
+\end{align}\]
+
+To solve for an individual $\beta_k, k = 1, 2, 3, 4$, this simplifies to:
+
+\[\begin{align}
+\log[h(t|\text{regimen}, g(d))] &= \log(0.425 t^{0.425-1}) + \log\lambda_1 + \beta_1 \times \mathbb{I}(\text{regimen} = 2) + \cdots + \beta_{K-1} \times \mathbb{I}(\text{regimen = K}) \\
+& \hspace{1em}+ \log(1.05)\times g(d) \\
+\beta_k &= \log(\lambda_k/\lambda_1) - \log(1.05)\times g(d) \\
+\text{where } \lambda_k \text{ solves:}\hspace{1em} & S(52-d) = e^{-\lambda_k(52-d)^{0.425}}
+\end{align}\]
+
 ```{r}
-# Defining the log hazard function
-log_haz_1 <- function(t, x, betas){
-  lhaz <- log(betas[["shape"]]*(t ^(betas[["shape"]] - 1))) + 
-    betas[["Intercept"]] +  
-    betas[["regimen2"]]*x[["regimen2"]] +
-    betas[["regimen3"]]*x[["regimen3"]] +
-    betas[["regimen4"]]*x[["regimen4"]] +
-    betas[["regimen5"]]*x[["regimen5"]] +
-    betas[["duration.fun"]]*x[["duration.fun"]] # fixed duration effect
+source(here("lib", "coef-function.R"))
+s.1 <- list(0.97, 0.95, 0.9)
+
+# A mixture of suboptimal, minimal, and desirable regimens
+situation1 <- lapply(s.1, function(xx){
+  beta1 <- coef.function(s.1 = xx, s.k = 0.98*xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
   
-  return(lhaz)
-}
+  beta0 <- log(uniroot(weibull_function,
+                   p = 0.425,
+                   surv.prop = xx,
+                   t = 26,
+                   interval = c(0,10))$root)
+  
+  output <- cbind(coef = c("beta0", "beta1", "beta2", "beta3", "beta4"),
+                  bind_rows(data.frame(main.eff = beta0), beta1, beta2, beta3, beta4))
+  return(output)}
+)
+
+# All are desirable
+situation2 <- lapply(s.1, function(xx){
+  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  
+  log(beta0 <- log(uniroot(weibull_function,
+                   p = 0.425,
+                   surv.prop = xx,
+                   t = 26,
+                   interval = c(0,10))$root))
+  
+  output <- cbind(coef = c("beta0", "beta1", "beta2", "beta3", "beta4"),
+                  bind_rows(data.frame(main.eff = beta0), beta1, beta2, beta3, beta4))
+  return(output)}
+)
+
+# All are minimal
+situation3 <- lapply(s.1, function(xx){
+  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  
+  beta0 <- log(uniroot(weibull_function,
+                   p = 0.425,
+                   surv.prop = xx,
+                   t = 26,
+                   interval = c(0,10))$root)
+  
+  output <- cbind(coef = c("beta0", "beta1", "beta2", "beta3", "beta4"),
+                  bind_rows(data.frame(main.eff = beta0), beta1, beta2, beta3, beta4))
+  return(output)}
+)
+
+```
+
+```{r simulating-data, cache = TRUE}
+# Defining the log hazard function
+source(here("lib","log-hazard-function.R"))
 
 true.coefs <- list(
-  s97.even = c(
+  s97.situation1 = c(
     shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
-    Intercept = log(uniroot(weibull_function,
-                            interval = c(0,10),
-                            p = 0.425,
-                            surv.prop = 0.97, # S(26) = 97%
-                            t = 26)$root),
-    regimen2 = log(1.05),
-    regimen3 = log(1.1),
-    regimen4 = log(1.15),
-    regimen5 = log(1.2),
-    duration.fun = log(1.01)),
-  s95.even = c(
+    Intercept = situation1[[1]]$main.eff[1],
+    regimen2 = situation1[[1]]$main.eff[2],
+    regimen3 = situation1[[1]]$main.eff[3],
+    regimen4 = situation1[[1]]$main.eff[4],
+    regimen5 = situation1[[1]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s95.situation1 = c(
     shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
-    Intercept = log(uniroot(weibull_function,
-                            interval = c(0,10),
-                            p = 0.425,
-                            surv.prop = 0.95, # S(26) = 95%
-                            t = 26)$root),
-    regimen2 = log(1.05),
-    regimen3 = log(1.1),
-    regimen4 = log(1.15),
-    regimen5 = log(1.2),
-    duration.fun = log(1.01)),
-  s90.even = c(
+    Intercept = situation1[[2]]$main.eff[1],
+    regimen2 = situation1[[2]]$main.eff[2],
+    regimen3 = situation1[[2]]$main.eff[3],
+    regimen4 = situation1[[2]]$main.eff[4],
+    regimen5 = situation1[[2]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s90.situation1 = c(
     shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
-    Intercept = log(uniroot(weibull_function,
-                            interval = c(0,10),
-                            p = 0.425,
-                            surv.prop = 0.90, # S(26) = 90%
-                            t = 26)$root),
-    regimen2 = log(1.05),
-    regimen3 = log(1.1),
-    regimen4 = log(1.15),
-    regimen5 = log(1.2),
-    duration.fun = log(1.01))
+    Intercept = situation1[[3]]$main.eff[1],
+    regimen2 = situation1[[3]]$main.eff[2],
+    regimen3 = situation1[[3]]$main.eff[3],
+    regimen4 = situation1[[3]]$main.eff[4],
+    regimen5 = situation1[[3]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s97.situation2 = c(
+    shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
+    Intercept = situation2[[1]]$main.eff[1],
+    regimen2 = situation2[[1]]$main.eff[2],
+    regimen3 = situation2[[1]]$main.eff[3],
+    regimen4 = situation2[[1]]$main.eff[4],
+    regimen5 = situation2[[1]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s95.situation2 = c(
+    shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
+    Intercept = situation2[[2]]$main.eff[1],
+    regimen2 = situation2[[2]]$main.eff[2],
+    regimen3 = situation2[[2]]$main.eff[3],
+    regimen4 = situation2[[2]]$main.eff[4],
+    regimen5 = situation2[[2]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s90.situation2 = c(
+    shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
+    Intercept = situation2[[3]]$main.eff[1],
+    regimen2 = situation2[[3]]$main.eff[2],
+    regimen3 = situation2[[3]]$main.eff[3],
+    regimen4 = situation2[[3]]$main.eff[4],
+    regimen5 = situation2[[3]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s97.situation3 = c(
+    shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
+    Intercept = situation3[[1]]$main.eff[1],
+    regimen2 = situation3[[1]]$main.eff[2],
+    regimen3 = situation3[[1]]$main.eff[3],
+    regimen4 = situation3[[1]]$main.eff[4],
+    regimen5 = situation3[[1]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s95.situation3 = c(
+    shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
+    Intercept = situation3[[2]]$main.eff[1],
+    regimen2 = situation3[[2]]$main.eff[2],
+    regimen3 = situation3[[2]]$main.eff[3],
+    regimen4 = situation3[[2]]$main.eff[4],
+    regimen5 = situation3[[2]]$main.eff[5],
+    duration.fun = log(1.05)),
+  s90.situation3 = c(
+    shape = 0.425, # fixed p such that F(13) = 0.75*F(26)
+    Intercept = situation3[[3]]$main.eff[1],
+    regimen2 = situation3[[3]]$main.eff[2],
+    regimen3 = situation3[[3]]$main.eff[3],
+    regimen4 = situation3[[3]]$main.eff[4],
+    regimen5 = situation3[[3]]$main.eff[5],
+    duration.fun = log(1.05))
+  
 )
 
 xx <- df_temp %>% 
@@ -424,48 +523,25 @@ xx <- df_temp %>%
          regimen4 = ifelse(regimen == 4, 1, 0),
          regimen5 = ifelse(regimen == 5, 1, 0),
          # Set up duration function
-         duration.fun = 26 - duration)
+         duration.fun = ifelse(regimen == 1, 0, 16 - duration))
 
-maxt <- 52-8
-df_outcome <- map(true.coefs,
+maxt <- 52
+
+
+df_outcome <- map(true.coefs, 
                   ~simsurv(dist = "weibull",
                            betas = .x,
                            loghazard = log_haz_1,
                            x = xx,
-                           maxt = maxt) %>% 
-                    bind_cols(df_temp))
+                           maxt = maxt))
+
+
+df_outcome <- df_outcome %>% 
+  map(~bind_cols(.x, df_temp))
 ```
 
-```{r visualize-hazards}
-df_vis <- xx %>% 
-  dplyr::select(-patient.id, -enroll.day) %>% 
-  unique()
-
-tlist <- as.list(1:26)
-names(tlist) <- 1:26
-map_dfr(tlist, ~bind_cols(lhaz = log_haz_1(t = .x, 
-                      x = df_vis, 
-                      betas = true.coefs[[2]]), df_vis),
-    .id = "t") %>% 
-  mutate(regimen = as.factor(regimen),
-         duration = as.factor(duration),
-         t = as.numeric(t)) %>% 
-  ggplot(aes(x = t, y = lhaz, col = duration)) +
-  facet_wrap(~regimen) + 
-  geom_line(aes(group = duration)) + 
-  ylab("log[h(t)]") + 
-  ggtitle("Log-hazard function over time", subtitle = "S(t) = 0.97, p = 0.4")
+```{r child=c("../sandbox/survival-curves_situation-1.Rmd", "../sandbox/survival-curves_situation-2.Rmd", "../sandbox/survival-curves_situation-3.Rmd")}
 ```
-
-
-##### Setting up the hazard ratios
-
-> (REMoxTB Figure 2)[https://www.nejm.org/doi/full/10.1056/NEJMoa1407426]. Panel A shows that the time until patients had an unfavorable outcome was shorter in the isoniazid group than in the control group (hazard ratio, 1.25 [97.5% CI, 1.08 to 1.42]) and was further reduced in the ethambutol group (hazard ratio, 1.21 [97.5% CI, 1.05 to 1.37]).
-
-\[\begin{align}
-S(t) &= e^{-\lambda t^p} \\
-h(t) &= \lambda pt^{p-1}
-\end{align}\]
 
 ## Generated data {.tabset .tabset-pills}
 
@@ -531,8 +607,7 @@ df_temp_long %>%
            alpha = 0.7,
            hjust = -0.1,
            vjust = 0) +
-  scale_x_continuous("Trial time (weeks)") #+ 
-  # coord_cartesian(xlim = c(0,enroll.time.weeks+2))
+  scale_x_continuous("Trial time (weeks)") 
 ```
 
 #### Visualization of Follow-up
@@ -543,39 +618,22 @@ df_outcome <- map(df_outcome,
   mutate(event.week.trial = event.day/7) %>% 
   mutate(observed = ifelse(event.day <= enroll.day + 365, "observed", "not observed")))
 
-# df_outcome[[2]] %>% 
-#   filter(patient.id %in% paste0("id",1:100)) %>% 
-#   mutate(patient.id = factor(patient.id, levels = paste0("id", 1:nrow(df_outcome[[2]])))) %>% 
-#   ggplot(aes(x = event.week.trial, y = patient.id, enroll.day)) +
-#   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
-#   geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id),
-#                col = "darkgray",
-#                lty = 2) +
-#   geom_point(data = filter(df_outcome[[2]], patient.id %in% paste0("id",1:100) & status == 1),
-#              aes(x = event.week.trial),
-#              alpha = 0.6) +
-#   theme_bw() + 
-#   labs(x = "Trial time (weeks)",
-#        y = "Patient enrollment") + 
-#   theme(axis.text.y = element_blank(),
-#         axis.ticks.y = element_blank())
-
-df_outcome[[2]] %>% 
+df_outcome$s97.situation1 %>% 
   filter(patient.id %in% paste0("id",1:100)) %>% 
-  mutate(patient.id = factor(patient.id, levels = paste0("id", 1:nrow(df_outcome[[2]]))),
+  mutate(patient.id = factor(patient.id, levels = paste0("id", 1:nrow(df_outcome$s97.situation1))),
          regimen = factor(regimen, levels = 1:5)) %>% 
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = regimen)) +
   geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id),
                col = "darkgray",
                lty = 2) +
-  geom_point(data = filter(df_outcome[[2]], patient.id %in% paste0("id",1:100) & status == 1),
+  geom_point(data = filter(df_outcome$s97.situation1, patient.id %in% paste0("id",1:100) & status == 1),
              aes(x = event.week.trial),
              alpha = 0.6) +
   theme_bw() + 
   labs(x = "Trial time (weeks)",
        y = "Patient enrollment") + 
-  ggtitle("Weibull parameterization (p = 0.4)") +
+  ggtitle(TeX("Situation 1, $S_{HRZE}(t) = 0.97")) +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank())
 ```
@@ -583,7 +641,7 @@ df_outcome[[2]] %>%
 #### Visualizing when (observed) failure events occur
 
 ```{r}
-df_outcome[[1]] %>% 
+df_outcome$s97.situation1 %>% 
   filter(status == 1 & observed == "observed") %>%
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
@@ -594,9 +652,9 @@ df_outcome[[1]] %>%
              alpha = 0.6) + 
   theme_bw() +
   scale_x_continuous("Trial time (weeks)") +
-  ggtitle("Exponential parameterization")
+  ggtitle(TeX("Situation 1, $S_{HRZE}(t) = 0.97"))
 
-df_outcome[[2]] %>% 
+df_outcome$s97.situation2 %>% 
   filter(status == 1 & observed == "observed") %>%
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
@@ -607,5 +665,18 @@ df_outcome[[2]] %>%
              alpha = 0.6) + 
   theme_bw() +
   scale_x_continuous("Trial time (weeks)")+
-  ggtitle("Weibull parameterization (p = 0.4)")
+  ggtitle(TeX("Situation 2, $S_{HRZE}(t) = 0.97"))
+
+df_outcome$s97.situation3 %>% 
+  filter(status == 1 & observed == "observed") %>%
+  ggplot(aes(x = event.week.trial, y = patient.id)) +
+  geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
+  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id), 
+               col = "darkgray",
+               lty = 2) + 
+  geom_point(aes(x = event.week.trial),
+             alpha = 0.6) + 
+  theme_bw() +
+  scale_x_continuous("Trial time (weeks)")+
+  ggtitle(TeX("Situation 3, $S_{HRZE}(t) = 0.97"))
 ```
