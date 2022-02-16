@@ -16,6 +16,7 @@ library(here)
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+options(knitr.kable.NA = '')
 library(simsurv)
 library(survminer)
 library(latex2exp)
@@ -494,7 +495,8 @@ df_outcome <- map(true.coefs,
 
 
 df_outcome <- df_outcome %>% 
-  map(~bind_cols(.x, df_temp))
+  map(~bind_cols(.x, df_temp)) %>% 
+  map(~mutate(.x, regimen = factor(regimen, levels = 1:5)))
 ```
 
 ```{r child=c("../sandbox/survival-curves_situation-1.Rmd", "../sandbox/survival-curves_situation-2.Rmd", "../sandbox/survival-curves_situation-3.Rmd")}
@@ -505,7 +507,9 @@ df_outcome <- df_outcome %>%
 ### Dataframe
 
 ```{r}
+########################
 # Log10(TTP Dataset)
+########################
 df_temp_long <- df_temp %>% 
   # Add in participant-level random effects
   left_join(Z) %>% 
@@ -528,57 +532,160 @@ df_temp_long <- df_temp %>%
   mutate(log10ttp.censored = ifelse(yij > log10(lod), "right", "none"),
          yij_censored = ifelse(yij > log10(lod), log10(lod), yij)) %>%
   mutate(regimen = as.factor(regimen)) %>%
-  dplyr::select(patient.id, enroll.day, regimen, duration, patient.visit.day, patient.visit.week, yij, log10ttp.censored, yij_censored) %>% 
-  group_by(patient.id) %>% 
-  mutate(interim1 = ifelse(max(patient.visit.day) + enroll.day < enroll.time.weeks*7, "included", "excluded"))
+  dplyr::select(patient.id, enroll.day, regimen, duration, patient.visit.day, patient.visit.week, yij, log10ttp.censored, yij_censored) 
+
+########################
+# Join Relapse Data
+########################
+df_outcome_long <- df_outcome %>% 
+  map(~full_join(.x, df_temp_long)) %>% 
+  map(~mutate(.x, 
+              observed.relapse = ifelse(status == 1 & eventtime <= 52 - duration, 1, 0),
+              observed.relapse.date.trial = ifelse(observed.relapse == 1, eventtime + duration + enroll.day/7, NA)))
+
+head(df_outcome_long)
 ```
 
 ```{r}
-df_temp_long %>%
-  head(n = 30) %>%
-  group_by(patient.id) %>%
+df_outcome_long$s97.situation1 %>%
+  dplyr::select(`Patient ID` = patient.id, 
+                `Day of enrollment (tau)` = enroll.day, 
+                Regimen = regimen, 
+                Duration = duration, 
+                `Weeks since randomization (t)` = patient.visit.week, 
+                `log10(TTP)` = yij_censored, 
+                `Relapse?` = observed.relapse, 
+                `Day of relapse (tau)` = observed.relapse.date.trial) %>% 
+  head(n = 45) %>%
+  group_by(`Patient ID`) %>%
   slice_head(n = 3) %>%
-  arrange(enroll.day) %>%
-  kable(caption = "First 3 observations for first 4 patients enrolled.",
+  arrange(`Day of enrollment (tau)`) %>%
+  kable(caption = "First 3 observations for first 5 patients enrolled.",
         digits = 2) %>%
-  kable_styling() 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:4)
 ```
 
 ### Data diagram {.tabset}
 
-#### Randomization scheme 
+#### Randomization scheme
 
 ```{r diagram-patient-data, fig.width=10,fig.height=8}
-df_temp_long %>% 
-  mutate(patient.id = factor(patient.id, levels = paste0("id", 1:(nkd*k*length(d))))) %>% 
-  filter(enroll.day <= 5*7) %>% 
+df_temp_long %>%
+  mutate(patient.id = factor(patient.id, levels = paste0("id", 1:(nkd*k*length(d))))) %>%
+  filter(enroll.day <= 5*7) %>%
   ggplot(aes(x = enroll.time.weeks, y = patient.id, col = regimen, shape = as.factor(duration))) +
-  geom_point(aes(x = (patient.visit.day + enroll.day)/7)) + 
-  theme_bw() + 
-  geom_vline(xintercept = c(0,16), 
+  geom_point(aes(x = (patient.visit.day + enroll.day)/7)) +
+  theme_bw() +
+  geom_vline(xintercept = c(0,16),
              lty = 2,
-             col = "darkgray") + 
-  annotate("text", 
-           x = 16, y = "id1", 
+             col = "darkgray") +
+  annotate("text",
+           x = 16, y = "id1",
            label = "Interim 1",
            alpha = 0.7,
            hjust = -0.1,
            vjust = 0) +
-  scale_x_continuous("Trial time (weeks)") 
+  scale_x_continuous("Trial time (weeks)")
+```
+
+#### Interim 1
+**Need to decide how big to "oversample" the control arm**
+
+At an enrolment rate of 10 participants per day, with 5 regimens and 5 durations per experimental regimens, the initial interim analysis will require:
+
+\[\begin{align}
+N_{\text{interim 1}} &= 4 \text{ experimental regimens} \times 30 \text{ participants per regimen} \\ 
+&\hspace{1em} + 1 \text{ control regimen}\times30 \text{ participants (minimum)} \times C \\
+&\geq 150 \text{participants}
+\end{align}\]
+
+The first interim analysis will not be able to be carried out until (AT MINIMUM) 27 weeks after the first day of enrollment (15 weeks of enrollment + 8 weeks of follow-up visits + $\approx$ 4 weeks for observation of TTP for last sputum sample). However, because we are concurrently randomizing to regimen and duration, it may take longer. *This depends on whether we care about balance in the duration sub-strata.*
+
+Here we trigger the first interim analysis $\approx 4$ weeks after the last sputum sample is collected on the last participant and 30 participants have been enrolled in each regimen.
+
+```{r}
+interim1 <- df_outcome_long$s97.situation1 %>%  # same for all situations
+  dplyr::select(patient.id, enroll.day, patient.visit.week, regimen, duration) %>% 
+  # First, pull their last entry
+  group_by(patient.id) %>% 
+  filter(patient.visit.week == max(patient.visit.week)) %>%
+  distinct() 
+
+print(interim1)
+
+interim1 <- interim1 %>%
+  arrange(enroll.day) %>%
+  group_by(regimen) %>%
+  mutate(nk_enroll = row_number()) %>%
+  ungroup() %>%
+  filter(nk_enroll == 30) %>%
+  mutate(last.visit.trial = patient.visit.week + enroll.day/7) %>%
+  summarise(last.visit.trial = max(last.visit.trial))
+
+print(interim1)
+
+df_interim1 <- map_dfr(df_outcome_long,
+                       ~group_by(.x, patient.id) %>% 
+                         filter(max(patient.visit.week) + enroll.day/7 <= (interim1$last.visit.trial)*(7.5/7)) %>% 
+                         mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim1$last.visit.trial + 4, 1, 
+                                                          ifelse(observed.relapse == 0, 0, 0))),
+                       .id = "situation")
+head(df_interim1)
+```
+
+```{r eval = FALSE}
+save(df_interim1,
+     file = here("sandbox", paste0(Sys.Date(), "_interim1-data-example.RData")))
+```
+
+```{r eval = FALSE}
+df_interim1 %>%
+  filter(situation == "s97.situation1") %>%
+  ggplot(aes(x = patient.visit.week, y = 10^yij_censored)) +
+  geom_smooth(aes(col = regimen)) +
+  scale_y_log10("TTP, log10 scale") +
+  scale_x_continuous("Weeks since randomization") +
+  theme_bw()
+
+relapse_output_interim <- df_interim1 %>%
+  group_by(situation, regimen, duration, relapse.interim1) %>%
+  summarise(n = n_distinct(patient.id))
+
+relapse_output_interim %>%
+  ungroup() %>%
+  filter(situation == "s97.situation1") %>%
+  dplyr::select(-situation) %>%
+  mutate(relapse.interim1 = ifelse(relapse.interim1 == 1, "Relapse", "No relapse")) %>%
+  pivot_wider(names_from = relapse.interim1,
+              values_from = n,
+              values_fill = ) %>%
+  kable() %>%
+  kable_styling()
+```
+
+![Example diagram of data for first interim analysis](../graphs/exploratory/interim-1-visualization.png)
+
+```{r}
+df_interim1 %>% head()
+  # group_by(regimen) %>% 
+  # summarise(n = n_distinct(patient.id)) %>% 
+  # kable(caption = "Number included per regimen in the interim analysis.") %>% 
+  # kable_styling()
 ```
 
 #### Visualization of Follow-up
 
 ```{r}
-df_outcome <- map(df_outcome,  
-  ~mutate(.x, event.day = eventtime*7 + (enroll.day + 7*duration)) %>% 
-  mutate(event.week.trial = event.day/7) %>% 
+df_outcome <- map(df_outcome,
+  ~mutate(.x, event.day = eventtime*7 + (enroll.day + 7*duration)) %>%
+  mutate(event.week.trial = event.day/7) %>%
   mutate(observed = ifelse(event.day <= enroll.day + 365, "observed", "not observed")))
 
-df_outcome$s97.situation1 %>% 
-  filter(patient.id %in% paste0("id",1:100)) %>% 
+df_outcome$s97.situation1 %>%
+  filter(patient.id %in% paste0("id",1:100)) %>%
   mutate(patient.id = factor(patient.id, levels = paste0("id", 1:nrow(df_outcome$s97.situation1))),
-         regimen = factor(regimen, levels = 1:5)) %>% 
+         regimen = factor(regimen, levels = 1:5)) %>%
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = regimen)) +
   geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id),
@@ -587,9 +694,9 @@ df_outcome$s97.situation1 %>%
   geom_point(data = filter(df_outcome$s97.situation1, patient.id %in% paste0("id",1:100) & status == 1),
              aes(x = event.week.trial),
              alpha = 0.6) +
-  theme_bw() + 
+  theme_bw() +
   labs(x = "Trial time (weeks)",
-       y = "Patient enrollment") + 
+       y = "Patient enrollment") +
   ggtitle(TeX("Situation 1, $S_{HRZE}(t) = 0.97")) +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank())
@@ -598,41 +705,41 @@ df_outcome$s97.situation1 %>%
 #### Visualizing when (observed) failure events occur
 
 ```{r}
-df_outcome$s97.situation1 %>% 
+df_outcome$s97.situation1 %>%
   filter(status == 1 & observed == "observed") %>%
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
-  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id), 
+  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id),
                col = "darkgray",
-               lty = 2) + 
+               lty = 2) +
   geom_point(aes(x = event.week.trial),
-             alpha = 0.6) + 
+             alpha = 0.6) +
   theme_bw() +
   scale_x_continuous("Trial time (weeks)") +
   ggtitle(TeX("Situation 1, $S_{HRZE}(t) = 0.97"))
 
-df_outcome$s97.situation2 %>% 
+df_outcome$s97.situation2 %>%
   filter(status == 1 & observed == "observed") %>%
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
-  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id), 
+  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id),
                col = "darkgray",
-               lty = 2) + 
+               lty = 2) +
   geom_point(aes(x = event.week.trial),
-             alpha = 0.6) + 
+             alpha = 0.6) +
   theme_bw() +
   scale_x_continuous("Trial time (weeks)")+
   ggtitle(TeX("Situation 2, $S_{HRZE}(t) = 0.97"))
 
-df_outcome$s97.situation3 %>% 
+df_outcome$s97.situation3 %>%
   filter(status == 1 & observed == "observed") %>%
   ggplot(aes(x = event.week.trial, y = patient.id)) +
   geom_segment(aes(x = enroll.day/7, xend = enroll.day/7 + duration, yend = patient.id, col = as.factor(duration))) +
-  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id), 
+  geom_segment(aes(x = enroll.day/7 + duration, xend = enroll.day/7 + 52, yend = patient.id),
                col = "darkgray",
-               lty = 2) + 
+               lty = 2) +
   geom_point(aes(x = event.week.trial),
-             alpha = 0.6) + 
+             alpha = 0.6) +
   theme_bw() +
   scale_x_continuous("Trial time (weeks)")+
   ggtitle(TeX("Situation 3, $S_{HRZE}(t) = 0.97"))
