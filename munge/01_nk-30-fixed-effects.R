@@ -9,21 +9,24 @@ d <- c(8,10,12,14,16)  # durations per regimen (weeks) -- fixed for now, except 
 nkd <- 6 # number of participants per regimen and duration at interim
 enroll.time.weeks <- (nkd*k*length(d))/10 # enrolling 10 participants per day, aiming for total sample size of nkd*k*d 
 
-load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_even-increases_random-slope.RData")
+#load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_even-increases_random-slope.RData")
+load("data/2022-01-27_simulated-df_even-increases_random-slope.RData")
 nk_30_even <- df_sims_s1 %>%
   map(~.x[[2]]) %>% # take the 30 sample size
   map(~mutate(.x, arm = as.factor(arm))) # make the arm a factor variable rather than integer
 
 rm(df_sims_s1) # for space
 
-load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_cluster-low-high_random-slope.RData")
+# load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_cluster-low-high_random-slope.RData")
+load("data/2022-01-27_simulated-df_cluster-low-high_random-slope.RData")
 nk_30_highlow <- df_sims_s2 %>%
   map(~.x[[2]]) %>% # take the 30 sample size
   map(~mutate(.x, arm = as.factor(arm))) # make the arm a factor variable rather than integer
 
 rm(df_sims_s2) # for space
 
-load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_clustered-high_random-slope.RData")
+# load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_clustered-high_random-slope.RData")
+load("data/2022-01-27_simulated-df_clustered-high_random-slope.RData")
 nk_30_high <- df_sims_s3 %>%
   map(~.x[[2]]) %>% # take the 30 sample size
   map(~mutate(.x, arm = as.factor(arm))) # make the arm a factor variable rather than integer
