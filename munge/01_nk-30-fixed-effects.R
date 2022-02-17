@@ -50,4 +50,4 @@ save(nk_30_fixed_effects,
      file = here("data", "simulated-datasets", 
                  paste0(Sys.Date(),"_log10ttp-fixed-effects-simulated-data-nk30.RData")))
 
-
+rm(nk_30_even, nk_30_high, nk_30_highlow, nk_30_fixed_effects)
