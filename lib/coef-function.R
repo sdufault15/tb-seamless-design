@@ -1,12 +1,12 @@
 coef.function <- function(s.1, s.k, t.1 = 26, d, max.d.k, p = 0.425, duration.effect = log(1.05)){
   
-  ref.lambda <- uniroot(weibull_function,
+  ref.lambda <- uniroot(weibull_survival_function,
                      p = p,
                      surv.prop = s.1,
                      t = t.1,
                      interval = c(0,10))$root
   
-  k.lambda <- uniroot(weibull_function,
+  k.lambda <- uniroot(weibull_survival_function,
                    p = p,
                    surv.prop = s.k,
                    t = 52 - d,
