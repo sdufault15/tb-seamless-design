@@ -4,7 +4,7 @@ fixed_effects_function <- function(simdata, k = 5, d = c(8,10,12,14,16), nkd = 6
   fe_df <- data.frame(patient.id = simdata[[1]]$patient.id) %>% 
     distinct() %>% 
     mutate(enroll.day = sample(1:(7*enroll.time.weeks), size = nkd*k*length(d), replace = TRUE),
-           duration = rep(d, each = nkd*k))
+           duration = rep(d, times = nkd*k))
   
   output <- simdata %>% 
     map(~ungroup(.x) %>% 
