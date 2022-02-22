@@ -183,8 +183,9 @@ simsurv_wrapper <- function(simdf, betas, loghaz, maxt){
                          loghazard = log_haz_1,
                          x = simdf,
                          maxt = maxt,
-                         seed = TRUE,
-                         rootsolver = "dfsane"))
+                         #seed = TRUE, # IMPROPER - FORCES SAME SIMULATED DATA FOR ALL ITERATIONS
+                         rootsolver = "uniroot",
+                         interval = c(1e-8, maxt +2)))
   output <- temp %>% 
     map(~bind_cols(.x, simdf) %>% 
           mutate(regimen = factor(regimen, levels = 1:5)))
@@ -202,7 +203,7 @@ nk_30_outcome_1 <- nk_30_ind %>%
                                    loghaz = log_haz_1,
                                    maxt = maxt)),
              .options = furrr_options(seed = TRUE))
-beepr::beep()
+
 
 save(nk_30_outcome_1,
      file = here("data","simulated-datasets",
