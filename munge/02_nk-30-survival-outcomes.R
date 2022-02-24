@@ -200,8 +200,8 @@ true.coefs.sub <- true.coefs[c(1,4,7)] # issues with simulating, taking a subset
 library(furrr)
 plan(multisession)
 nk_30_outcome_1 <- nk_30_ind %>% 
-  future_map(.x,
-             ~map(~simsurv_wrapper(.x, 
+  future_map(~map(.x, 
+                  ~simsurv_wrapper(.x, 
                                    betas = true.coefs.sub,
                                    loghaz = log_haz_1,
                                    maxt = maxt)),
