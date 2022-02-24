@@ -43,11 +43,11 @@ situation2 <- lapply(s.1, function(xx){
   beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
   beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
   
-  log(beta0 <- log(uniroot(weibull_survival_function,
+  beta0 <- log(uniroot(weibull_survival_function,
                            p = 0.425,
                            surv.prop = xx,
                            t = 26,
-                           interval = c(0,10))$root))
+                           interval = c(0,10))$root)
   
   output <- cbind(coef = c("beta0", "beta1", "beta2", "beta3", "beta4"),
                   bind_rows(data.frame(main.eff = beta0), beta1, beta2, beta3, beta4))
@@ -168,7 +168,10 @@ nk_30_ind <- nk_30_fixed_effects %>%
                      regimen4 = ifelse(regimen == 4, 1, 0),
                      regimen5 = ifelse(regimen == 5, 1, 0),
                      # Set up duration function
-                     duration.fun = ifelse(regimen == 1, 0, 16 - duration))))
+                     duration.fun = ifelse(regimen == 1, 0, 16 - duration)) %>% 
+             # Only want 1 row per person
+             dplyr::select(patient.id, duration, regimen, regimen2:duration.fun) %>% 
+             distinct()))
 
 ####################
 # Simulating survival times 
@@ -185,7 +188,7 @@ simsurv_wrapper <- function(simdf, betas, loghaz, maxt){
                          maxt = maxt,
                          #seed = TRUE, # IMPROPER - FORCES SAME SIMULATED DATA FOR ALL ITERATIONS
                          rootsolver = "uniroot",
-                         interval = c(1e-8, maxt +2)))
+                         interval = c(1e-32, maxt + 2)))
   output <- temp %>% 
     map(~bind_cols(.x, simdf) %>% 
           mutate(regimen = factor(regimen, levels = 1:5)))
@@ -197,13 +200,12 @@ true.coefs.sub <- true.coefs[c(1,4,7)] # issues with simulating, taking a subset
 library(furrr)
 plan(multisession)
 nk_30_outcome_1 <- nk_30_ind %>% 
-  future_map(~map(.x,
-                  ~simsurv_wrapper(.x, 
+  future_map(.x,
+             ~map(~simsurv_wrapper(.x, 
                                    betas = true.coefs.sub,
                                    loghaz = log_haz_1,
                                    maxt = maxt)),
              .options = furrr_options(seed = TRUE))
-
 
 save(nk_30_outcome_1,
      file = here("data","simulated-datasets",
