@@ -168,10 +168,7 @@ nk_30_ind <- nk_30_fixed_effects %>%
                      regimen4 = ifelse(regimen == 4, 1, 0),
                      regimen5 = ifelse(regimen == 5, 1, 0),
                      # Set up duration function
-                     duration.fun = ifelse(regimen == 1, 0, 16 - duration)) %>% 
-             # Only want 1 row per person
-             dplyr::select(patient.id, duration, regimen, regimen2:duration.fun) %>% 
-             distinct()))
+                     duration.fun = ifelse(regimen == 1, 0, 16 - duration))))
 
 ####################
 # Simulating survival times 
@@ -180,23 +177,30 @@ nk_30_ind <- nk_30_fixed_effects %>%
 maxt <- 48
 
 simsurv_wrapper <- function(simdf, betas, loghaz, maxt){
+  
+  tempdf <- simdf %>% 
+    # Only want 1 row per person
+    dplyr::select(patient.id, duration, regimen, regimen2:duration.fun) %>% 
+    distinct()
+  
   temp <- map(betas,
                 ~simsurv(dist = "weibull",
                          betas = .x,
                          loghazard = log_haz_1,
-                         x = simdf,
+                         x = tempdf,
                          maxt = maxt,
                          #seed = TRUE, # IMPROPER - FORCES SAME SIMULATED DATA FOR ALL ITERATIONS
                          rootsolver = "uniroot",
                          interval = c(1e-32, maxt + 2)))
   output <- temp %>% 
-    map(~bind_cols(.x, simdf) %>% 
+    map(~bind_cols(.x, tempdf) %>%
+          full_join(simdf) %>% 
           mutate(regimen = factor(regimen, levels = 1:5)))
   
   return(output)
 }
 
-true.coefs.sub <- true.coefs[c(1,4,7)] # issues with simulating, taking a subset for now?
+true.coefs.sub <- true.coefs
 library(furrr)
 plan(multisession)
 nk_30_outcome_1 <- nk_30_ind %>% 
