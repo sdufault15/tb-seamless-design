@@ -6,7 +6,7 @@ source(here("lib","fixed-effects-function.R"))
 
 k <- 5 # number of regimens
 d <- c(16)  # durations per regimen (weeks) -- fixed for now at 16 weeks EXCEPT for control
-nkd <- 6 # number of participants per regimen and duration at interim
+nkd <- 30 # number of participants per regimen and duration at interim
 enroll.time.weeks <- (nkd*k*length(d))/10 # enrolling 10 participants per day, aiming for total sample size of nkd*k*d 
 
 #load("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_even-increases_random-slope.RData")
@@ -51,6 +51,6 @@ nk_30_fixed_effects <-
 
 save(nk_30_fixed_effects,
      file = here("data", "simulated-datasets", 
-                 paste0(Sys.Date(),"_log10ttp-fixed-effects-simulated-data-nk30.RData")))
+                 paste0(Sys.Date(),"_log10ttp-fixed-effects-simulated-data-nk30_fixed-4mo-duration.RData")))
 
 rm(nk_30_even, nk_30_high, nk_30_highlow, nk_30_fixed_effects)
