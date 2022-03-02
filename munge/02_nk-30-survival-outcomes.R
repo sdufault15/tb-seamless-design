@@ -4,7 +4,7 @@
 ###########################################################################
 
 files <- file.info(list.files(here("data", "simulated-datasets/"), full.names = T))
-file_interest <- files[stringr::str_detect(rownames(files), "log10ttp-fixed-effects-simulated-data-nk30"),]
+file_interest <- files[stringr::str_detect(rownames(files), "log10ttp-fixed-effects-simulated-data-nk30.RData"),]
 load(rownames(file_interest)[which.max(file_interest$mtime)])
 rm(file_interest,files)
 
