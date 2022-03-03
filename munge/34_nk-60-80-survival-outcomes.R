@@ -4,7 +4,7 @@
 ###########################################################################
 
 files <- file.info(list.files(here("data", "simulated-datasets/"), full.names = T))
-file_interest <- files[stringr::str_detect(rownames(files), "log10ttp-fixed-effects-simulated-data-nk30.RData"),]
+file_interest <- files[stringr::str_detect(rownames(files), "log10ttp-fixed-effects-simulated-data-nk60.RData"),]
 load(rownames(file_interest)[which.max(file_interest$mtime)])
 rm(file_interest,files)
 
@@ -21,9 +21,9 @@ s.1 <- list(0.97, 0.95, 0.9) # survival at the end of follow-up (26 weeks) for t
 # A mixture of suboptimal, minimal, and desirable regimens
 situation1 <- lapply(s.1, function(xx){
   beta1 <- coef.function(s.1 = xx, s.k = 0.98*xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = 1.015*xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                        p = 0.425,
@@ -38,10 +38,10 @@ situation1 <- lapply(s.1, function(xx){
 
 # All are desirable
 situation2 <- lapply(s.1, function(xx){
-  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta1 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                            p = 0.425,
@@ -56,10 +56,10 @@ situation2 <- lapply(s.1, function(xx){
 
 # All are minimal
 situation3 <- lapply(s.1, function(xx){
-  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                        p = 0.425,
@@ -159,7 +159,7 @@ true.coefs <- list(
 # Setting up indicator functions
 ##################
 
-nk_30_ind <- nk_30_fixed_effects %>%
+nk_60_ind <- nk_60_fixed_effects %>%
   map(~map(.x,
              # set up indicator functions
              ~mutate(.x, 
@@ -203,7 +203,7 @@ simsurv_wrapper <- function(simdf, betas, loghaz, maxt){
 true.coefs.sub <- true.coefs
 library(furrr)
 plan(multisession)
-nk_30_outcome_1 <- nk_30_ind %>% 
+nk_60_outcome_1 <- nk_60_ind %>% 
   future_map(~map(.x, 
                   ~simsurv_wrapper(.x, 
                                    betas = true.coefs.sub,
@@ -211,6 +211,6 @@ nk_30_outcome_1 <- nk_30_ind %>%
                                    maxt = maxt)),
              .options = furrr_options(seed = TRUE))
 
-save(nk_30_outcome_1,
+save(nk_60_outcome_1,
      file = here("data","simulated-datasets",
-                 paste0(Sys.Date(), "_full-data-nk30-survival-97.RData")))
+                 paste0(Sys.Date(), "_full-data-nk60-survival-97.RData")))
