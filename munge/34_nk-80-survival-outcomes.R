@@ -4,7 +4,7 @@
 ###########################################################################
 
 files <- file.info(list.files(here("data", "simulated-datasets/"), full.names = T))
-file_interest <- files[stringr::str_detect(rownames(files), "log10ttp-fixed-effects-simulated-data-nk60.RData"),]
+file_interest <- files[stringr::str_detect(rownames(files), "log10ttp-fixed-effects-simulated-data-nk80.RData"),]
 load(rownames(file_interest)[which.max(file_interest$mtime)])
 rm(file_interest,files)
 
@@ -159,7 +159,7 @@ true.coefs <- list(
 # Setting up indicator functions
 ##################
 
-nk_60_ind <- nk_60_fixed_effects %>%
+nk_80_ind <- nk_80_fixed_effects %>%
   map(~map(.x,
              # set up indicator functions
              ~mutate(.x, 
@@ -203,7 +203,7 @@ simsurv_wrapper <- function(simdf, betas, loghaz, maxt){
 true.coefs.sub <- true.coefs
 library(furrr)
 plan(multisession)
-nk_60_outcome_1 <- nk_60_ind %>% 
+nk_80_outcome_1 <- nk_80_ind %>% 
   future_map(~map(.x, 
                   ~simsurv_wrapper(.x, 
                                    betas = true.coefs.sub,
@@ -211,6 +211,6 @@ nk_60_outcome_1 <- nk_60_ind %>%
                                    maxt = maxt)),
              .options = furrr_options(seed = TRUE))
 
-save(nk_60_outcome_1,
+save(nk_80_outcome_1,
      file = here("data","simulated-datasets",
-                 paste0(Sys.Date(), "_full-data-nk60-survival-97.RData")))
+                 paste0(Sys.Date(), "_full-data-nk80-survival-97.RData")))
