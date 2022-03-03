@@ -22,9 +22,9 @@ s.1 <- list(0.97, 0.95, 0.9) # survival at the end of follow-up (26 weeks) for t
 # A mixture of suboptimal, minimal, and desirable regimens
 situation1 <- lapply(s.1, function(xx){
   beta1 <- coef.function(s.1 = xx, s.k = 0.98*xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = 1.015*xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                        p = 0.425,
@@ -39,10 +39,10 @@ situation1 <- lapply(s.1, function(xx){
 
 # All are desirable
 situation2 <- lapply(s.1, function(xx){
-  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 8, max.d.k = 16, duration.effect = log(1.05))
+  beta1 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = 1.015*xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                            p = 0.425,
@@ -57,10 +57,10 @@ situation2 <- lapply(s.1, function(xx){
 
 # All are minimal
 situation3 <- lapply(s.1, function(xx){
-  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 12, max.d.k = 16, duration.effect = log(1.05))
+  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                        p = 0.425,
@@ -214,4 +214,4 @@ nk_30_outcome_1 <- nk_30_ind %>%
 
 save(nk_30_outcome_1,
      file = here("data","simulated-datasets",
-                 paste0(Sys.Date(), "_full-data-nk30-survival-97.RData")))
+                 paste0(Sys.Date(), "_full-data-nk30-survival-97_4mo-fixed.RData")))
