@@ -45,17 +45,17 @@ sd_randomnoise <- s$spec_pars$Estimate[1]
 #################################################################
 # Slopes
 # 0%,0%,0%,0%
-df_sims_s0 <- df_sim_wrapper_function(n_sims = 1000,
-                                      betas = betas, 
-                                      slopes = rep(0,4), 
-                                      weeks = 8, 
-                                      nk = as.list(c(20,30,40)), 
-                                      sd_id = sd_id, 
-                                      sd_randomnoise = sd_randomnoise, 
-                                      lod = 25)
-save(df_sims_s0,
-     file = here("data",
-                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_null.RData")))
+# df_sims_s0 <- df_sim_wrapper_function(n_sims = 1000,
+#                                       betas = betas, 
+#                                       slopes = rep(0,4), 
+#                                       weeks = 8, 
+#                                       nk = as.list(c(60,80)), 
+#                                       sd_id = sd_id, 
+#                                       sd_randomnoise = sd_randomnoise, 
+#                                       lod = 25)
+# save(df_sims_s0,
+#      file = here("data",
+#                  paste0("simulated-datasets/",Sys.Date(), "_simulated-df_null.RData")))
 
 
 # Slopes
@@ -64,13 +64,13 @@ df_sims_s1 <- df_sim_wrapper_function(n_sims = 1000,
                                       betas = betas, 
                                       slopes = seq(0.1,0.4,by = 0.1), 
                                       weeks = 8, 
-                                      nk = as.list(c(20,30,40)), 
+                                      nk = as.list(c(60,80)), 
                                       sd_id = sd_id, 
                                       sd_randomnoise = sd_randomnoise, 
                                       lod = 25)
 save(df_sims_s1,
      file = here("data",
-                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_even-increases.RData")))
+                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_even-increases_nk60-80.RData")))
 
 # Slopes
 # -10%,10%,35%,40
@@ -78,13 +78,13 @@ df_sims_s2 <- df_sim_wrapper_function(n_sims = 1000,
                                       betas = betas, 
                                       slopes = c(-.10,.10,.35,.40), 
                                       weeks = 8, 
-                                      nk = as.list(c(20,30,40)), 
+                                      nk = as.list(c(60,80)), 
                                       sd_id = sd_id, 
                                       sd_randomnoise = sd_randomnoise, 
                                       lod = 25)
 save(df_sims_s2,
      file = here("data",
-                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_cluster-low-high.RData")))
+                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_cluster-low-high_nk60-80.RData")))
 
 # Slopes
 # 35%, 37%, 39%, 41%
@@ -92,11 +92,11 @@ df_sims_s3 <- df_sim_wrapper_function(n_sims = 1000,
                                       betas = betas, 
                                       slopes = seq(.35,.41,by = 0.02),
                                       weeks = 8, 
-                                      nk = as.list(c(20,30,40)), 
+                                      nk = as.list(c(60,80)), 
                                       sd_id = sd_id, 
                                       sd_randomnoise = sd_randomnoise, 
                                       lod = 25)
 save(df_sims_s3,
      file = here("data",
-                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_clustered-high.RData")))
+                 paste0("simulated-datasets/",Sys.Date(), "_simulated-df_clustered-high_nk60-80.RData")))
 
