@@ -37,14 +37,17 @@ rm(df_sims_s3) # for space
 
 nk_30_even <- fixed_effects_function(simdata = nk_30_even,
                                      d = d,
+                                     nkd = nkd,
                                      enroll.time.weeks = enroll.time.weeks)
 
 nk_30_highlow <- fixed_effects_function(simdata = nk_30_highlow,
                                         d = d,
+                                        nkd = nkd,
                                      enroll.time.weeks = enroll.time.weeks)
 
 nk_30_high <- fixed_effects_function(simdata = nk_30_high,
                                      d = d,
+                                     nkd = nkd,
                                      enroll.time.weeks = enroll.time.weeks)
 
 nk_30_fixed_effects <- 
