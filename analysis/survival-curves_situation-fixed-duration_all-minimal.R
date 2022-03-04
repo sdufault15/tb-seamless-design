@@ -6,10 +6,10 @@ source(here("lib", "log-hazard-function.R"))
 
 s1 <- c(0.97, 0.95, 0.9)
 situation1 <- lapply(s1[2], function(xx){
-  beta1 <- coef.function(s.1 = xx, s.k = 1-(1-xx)*2, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
-  beta2 <- coef.function(s.1 = xx, s.k = 1-(1-xx)*2, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
-  beta3 <- coef.function(s.1 = xx, s.k = 1-(1-xx)*2, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
-  beta4 <- coef.function(s.1 = xx, s.k = 1-(1-xx)*2, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta1 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta2 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta3 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
+  beta4 <- coef.function(s.1 = xx, s.k = xx, t.1 = 26, d = 16, max.d.k = 16, duration.effect = log(1.05))
   
   beta0 <- log(uniroot(weibull_survival_function,
                        p = 0.425,
@@ -146,6 +146,12 @@ surv.k5.d16 <- map_dfr(t.list,
 ###################
 # All together
 ###################
+cols <- c("Control" = "turquoise4",
+          "Regimen 2" = "black",
+          "Regimen 3" = "black",
+          "Regimen 4" = "black",
+          "Regimen 5" = "black")
+
 full_join(full_join(full_join(surv.k2.d16, surv.k3.d16), surv.k4.d16), surv.k5.d16) %>% 
   bind_rows(tibble(t = 0:16, 
                        "Regimen 2" = 1,

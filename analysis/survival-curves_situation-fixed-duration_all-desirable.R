@@ -146,6 +146,13 @@ surv.k5.d16 <- map_dfr(t.list,
 ###################
 # All together
 ###################
+
+cols <- c("Control" = "turquoise4",
+          "Regimen 2" = "black",
+          "Regimen 3" = "black",
+          "Regimen 4" = "black",
+          "Regimen 5" = "black")
+
 full_join(full_join(full_join(surv.k2.d16, surv.k3.d16), surv.k4.d16), surv.k5.d16) %>% 
   bind_rows(tibble(t = 0:16, 
                        "Regimen 2" = 1,
