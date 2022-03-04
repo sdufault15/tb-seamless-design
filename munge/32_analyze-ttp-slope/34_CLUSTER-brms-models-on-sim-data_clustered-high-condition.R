@@ -2,7 +2,7 @@
 # Run BRMS models on simulated data
 ##############################################
 library(tidyverse)
-library(parallely)
+library(parallelly)
 library(brms)
 source("~/tb-seamless/lib/df_extract-mcmc-slopes-function.R")
 
