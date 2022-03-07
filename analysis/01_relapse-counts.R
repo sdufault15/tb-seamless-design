@@ -1,7 +1,6 @@
 ######################
 # Even
 ######################
-evenTTP <- nk_30_outcome_1$nk_30_even
 
 relapse_count_function <- function(simdf){
   # date of interim analysis
@@ -9,7 +8,7 @@ relapse_count_function <- function(simdf){
     filter((week + enroll.day/7) == max(week + enroll.day/7)) %>% 
     mutate(interim.week = (week + # date of last visit
                              enroll.day/7 + #date of enrollment
-                             4)) # 25 days for culture conversion
+                             4 + 1)) # 25 days for culture conversion and one week for analysis
   
   temp <- simdf %>% 
     mutate(observed.relapse = ifelse(status == 1 & eventtime <= 52 - duration, 1, 0),
@@ -62,34 +61,6 @@ rm(evenTTP_full)
 ######################
 # High-Low
 ######################
-highlowTTP <- nk_30_outcome_1$nk_30_highlow
-
-relapse_count_function <- function(simdf){
-  # date of interim analysis
-  interim_date <- simdf %>% 
-    filter((week + enroll.day/7) == max(week + enroll.day/7)) %>% 
-    mutate(interim.week = (week + # date of last visit
-                             enroll.day/7 + #date of enrollment
-                             4)) # 25 days for culture conversion
-  
-  temp <- simdf %>% 
-    mutate(observed.relapse = ifelse(status == 1 & eventtime <= 52 - duration, 1, 0),
-           observed.relapse.date.trial = ifelse(observed.relapse == 1, eventtime + duration + enroll.day/7, NA)) %>% 
-    mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim_date$interim.week, 1, 
-                                     ifelse(observed.relapse == 0, 0, 0))) %>% 
-    mutate(Regimen = paste0("Regimen ", regimen),
-           Duration = factor(duration, levels = c(8,10,12,14,16,26))) 
-  
-  counts <- temp %>% 
-    group_by(regimen, duration, 
-             relapses_observed = (!is.na(observed.relapse.date.trial) & 
-                                    observed.relapse.date.trial <= interim_date$interim.week)) %>% 
-    summarise(n_relapses = n_distinct(patient.id)) %>%  # for now - participants are generating more than 1 relapse. MUST FIX
-    filter(relapses_observed == TRUE) %>% 
-    dplyr::select(-relapses_observed)
-  
-  return(counts)
-}
 
 # Count relapses
 highlowTTP_full <- map_dfr(highlowTTP[1:500],
@@ -102,7 +73,7 @@ highlowTTP_full2 <- map_dfr(highlowTTP[501:1000],
                                   ~relapse_count_function(.x),
                                   .id = "setting"),
                          .id = "simulation")
-beepr::beep()
+
 
 highlowTTP_full <- bind_rows(highlowTTP_full,
                           highlowTTP_full2)
@@ -123,34 +94,6 @@ rm(highlowTTP_full)
 ######################
 # High
 ######################
-highTTP <- nk_30_outcome_1$nk_30_high
-
-relapse_count_function <- function(simdf){
-  # date of interim analysis
-  interim_date <- simdf %>% 
-    filter((week + enroll.day/7) == max(week + enroll.day/7)) %>% 
-    mutate(interim.week = (week + # date of last visit
-                             enroll.day/7 + #date of enrollment
-                             4)) # 25 days for culture conversion
-  
-  temp <- simdf %>% 
-    mutate(observed.relapse = ifelse(status == 1 & eventtime <= 52 - duration, 1, 0),
-           observed.relapse.date.trial = ifelse(observed.relapse == 1, eventtime + duration + enroll.day/7, NA)) %>% 
-    mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim_date$interim.week, 1, 
-                                     ifelse(observed.relapse == 0, 0, 0))) %>% 
-    mutate(Regimen = paste0("Regimen ", regimen),
-           Duration = factor(duration, levels = c(8,10,12,14,16,26))) 
-  
-  counts <- temp %>% 
-    group_by(regimen, duration, 
-             relapses_observed = (!is.na(observed.relapse.date.trial) & 
-                                    observed.relapse.date.trial <= interim_date$interim.week)) %>% 
-    summarise(n_relapses = n_distinct(patient.id)) %>%  # for now - participants are generating more than 1 relapse. MUST FIX
-    filter(relapses_observed == TRUE) %>% 
-    dplyr::select(-relapses_observed)
-  
-  return(counts)
-}
 
 # Count relapses
 highTTP_full <- map_dfr(highTTP[1:500],
@@ -163,7 +106,7 @@ highTTP_full2 <- map_dfr(highTTP[501:1000],
                                      ~relapse_count_function(.x),
                                      .id = "setting"),
                             .id = "simulation")
-beepr::beep()
+ 
 
 highTTP_full <- bind_rows(highTTP_full,
                              highTTP_full2)
