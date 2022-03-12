@@ -1,0 +1,313 @@
+---
+title: "Phase IIB Seamless Simulation Study Results"
+author: "Suzanne Dufault"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+**Caution: RESULTS ARE NOT RELIABLE YET**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.path = "../graphs/simulation-results/")
+
+library(tidyverse)
+library(here)
+library(kableExtra)
+library(knitr)
+options(knitr.kable.NA = '')
+
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_extract-mcmc-slopes-function.R")
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_best-v-rest-bayes-function.R")
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_pairwise-comparisons-bayes-function.R")
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_best-in-topk-bayes-function.R")
+```
+
+```{r log10ttp-data}
+load(here("data","bayes-generated","2022-02-18_mcmc-mods_even_30_100.RData")) # this is the corresponding result for the sample dataset
+
+mcmc_m1 <- mcmc_mods_even_30[[1]] # for demonstration
+```
+
+```{r relapse-data}
+load(here("data","analyzed","2022-02-24_relapse-counts-by-simulation.RData"))
+```
+
+## Simulation Study Results {.tabset}
+
+### Conditions {.tabset .tabset-pills}
+
+
+#### Survival Conditions
+
+| Setting | Regimen | Characteristics | Questions of Interest |
+|:-------:|:-------:|:----------------|:----------------------|
+| 1 | 2 | suboptimal, $S_2(52-16) = S_1(26)\times0.95$ | Are we able to identify the best regimen? How often do we discard the best regimen/carry forward the worst regimen at interim?|
+| | 3 | minimal, $S_3(52-12) = S_1(26)$ | |
+| | 4 | minimal, $S_4(52-12) = S_1(26)$ | |
+| | 5 | desirable, $S_5(52-8) = S_1(26)$ | |
+| | | | |
+| 2 | 2 | desirable, $S_2(52-8) = S_1(26)$ | What is the risk of having the slope decision-making step when all are good?|
+| | 3 | desirable, $S_3(52-8) = S_1(26)$ | |
+| | 4 | desirable, $S_4(52-8) = S_1(26)$ | |
+| | 5 | desirable, $S_5(52-8) = S_1(26)$ | |
+| | | | |
+| 3 | 2 | minimal, $S_2(52-12) = S_1(26)$ | What is the risk of having the slope decision-making step when all are minimal?|
+| | 3 | minimal, $S_3(52-12) = S_1(26)$ | |
+| | 4 | minimal, $S_4(52-12) = S_1(26)$ | |
+| | 5 | minimal, $S_5(52-12) = S_1(26)$ | |
+
+![Visualization of Situation 1 characteristics](../graphs/exploratory/unnamed-chunk-9-1.png)
+
+![Visualization of Situation 2 characteristics](../graphs/exploratory/unnamed-chunk-13-1.png)
+
+![Visualization of Situation 3 characteristics](../graphs/exploratory/unnamed-chunk-14-1.png)
+
+#### log10(TTP) conditions
+
++ For each treatment arm, we will do a handful of hypothetical intervention effect sizes. These will be specified as percent change in slope *as compared to the control*.   
+  + $\{10\%,20\%,30\%,40\%\}$ (even relative increases by treatment arm)
+  + $\{-10\%,10\%,35\%,40\%\}$ (two are near the control arm, two are better. Can we distinguish the best?)
+  + $\{35\%, 37\%, 39\%, 41\%\}$
+
+![Visualization of conditions](../../phase2b-simstudy/graphs/simulation-results/lineplot_simulation-conditions-1.png)
+
+### Simulation Results
+
+Need to set thresholds to evaluate our "power" to move forward the right regimens.
+
+```{r sim-study-relapse-table, cache=TRUE}
+sit.names <- unique(df_relapses_even$setting)
+sit.names <- str_replace(str_replace(str_replace(sit.names, pattern = "situation1", " Mixed."),
+                         "situation2", " All desirable."),
+                         "situation3", " All minimal.")
+sit.names <- data.frame(setting = unique(df_relapses_even$setting),
+                        Setting = str_replace(sit.names, "s9", "S1(26) = 0.9"))
+  
+bind_rows(df_relapses$df_relapses_even,
+          df_relapses$df_relapses_high,
+          df_relapses$df_relapses_highlow) %>% 
+  group_by(regimen, duration, setting) %>% 
+  summarise(relapse.1 = 100*(sum(n_relapses == 1)/3000),
+            relapse.2 = 100*(sum(n_relapses == 2)/3000),
+            relapse.3.or.more = 100*(sum(n_relapses >= 3)/3000),
+            nsims = 3000) %>% 
+  left_join(sit.names) %>% 
+  filter(Setting == "S1(26) = 0.97. Mixed." | is.na(setting)) %>% 
+  rename(Regimen = regimen,
+         Duration = duration,
+         Characteristic = setting,
+         `Perc. sims with 1 relapse` = relapse.1,
+         `Perc. sims with 2 relapses` = relapse.2,
+         `Perc. sims with 3+ relapses` = relapse.3.or.more,
+         `No. sims` = nsims) %>% 
+  dplyr::select(-Characteristic, -Setting) %>% 
+  arrange(Regimen) %>% 
+  kable(caption = "S(26) = 0.97 for HRZE. Mixed characteristics.",
+        digits = 2) %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1)
+
+bind_rows(df_relapses$df_relapses_even,
+          df_relapses$df_relapses_high,
+          df_relapses$df_relapses_highlow) %>% 
+  group_by(setting) %>% 
+  arrange(regimen, simulation) %>% 
+  mutate(rown = row_number()) %>% 
+  # Pulling only 1 entry from the control group
+  filter((rown == 1 & regimen == 1) | regimen != 1) %>% 
+  filter(simulation == 1) %>% 
+  mutate(regimen = factor(regimen),
+         duration = factor(duration)) %>% 
+  group_by(regimen, duration, setting) %>% 
+  summarise(relapse.1 = 100*(sum(n_relapses == 1)/3000),
+            relapse.2 = 100*(sum(n_relapses == 2)/3000),
+            relapse.3.or.more = 100*(sum(n_relapses >= 3)/3000)) %>% 
+  left_join(sit.names) %>%  arrange(regimen) %>%  
+  filter(Setting == "S1(26) = 0.97. All desirable." | is.na(setting)) %>% 
+  rename(Regimen = regimen,
+         Duration = duration,
+         Characteristic = setting,
+         `Perc. sims with 1 relapse` = relapse.1,
+         `Perc. sims with 2 relapses` = relapse.2,
+         `Perc. sims with 3+ relapses` = relapse.3.or.more) %>% 
+  dplyr::select(-Characteristic, -Setting) %>% 
+  arrange(Regimen) %>% 
+  kable(caption = "S(26) = 0.97 for HRZE. All desirable.",
+        digits = 2) %>% 
+  kable_styling()
+
+bind_rows(df_relapses$df_relapses_even,
+          df_relapses$df_relapses_high,
+          df_relapses$df_relapses_highlow) %>% 
+  mutate(rown = row_number()) %>% 
+  filter((rown == 1 & regimen == 1) | regimen != 1) %>% 
+  group_by(regimen, duration, setting) %>% 
+  summarise(relapse.1 = 100*(sum(n_relapses == 1)/3000),
+            relapse.2 = 100*(sum(n_relapses == 2)/3000),
+            relapse.3.or.more = 100*(sum(n_relapses >= 3)/3000)) %>% 
+  left_join(sit.names) %>% 
+  filter(Setting == "S1(26) = 0.97. All minimal." | is.na(setting)) %>% 
+  rename(Regimen = regimen,
+         Duration = duration,
+         Characteristic = setting,
+         `Perc. sims with 1 relapse` = relapse.1,
+         `Perc. sims with 2 relapses` = relapse.2,
+         `Perc. sims with 3+ relapses` = relapse.3.or.more) %>% 
+  dplyr::select(-Characteristic, -Setting) %>% 
+  arrange(Regimen) %>% 
+  kable(caption = "S(26) = 0.97 for HRZE. All minimal",
+        digits = 2) %>% 
+  kable_styling()
+```
+
+1. Drop any regimen with less than 80% confidence that it has a larger effect size on log10(TTP) slope than the control regimen. 
+
+2. Drop any regimen with less than 80% confidence that it is in the top 2 best regimens.
+
+
+```{r}
+```
+
+### Analysis of a single single simulated dataset {.tabset .tabset-pills}
+
+```{r single-dataset, cache = TRUE}
+load(here("data","simulated-datasets","2022-02-24_full-data-nk30-survival-97.RData"))
+df_single <- nk_30_outcome_1$nk_30_even[[1]]$s97.situation1
+rm(nk_30_outcome_1)
+```
+
+**Conclusion.** (Note: these are not full results as duration was not properly randomized)
+
+Based on the log10(TTP) results, we can say with 87.6% confidence that regimen 5 is the best. Our most credible estimate of its corresponding improvement in slope relative to HRZE is 34% (95% CI: 15.2%, 54.4%).
+
+With respect to the relapse data, we would drop regimens 2 and 4.
+
+Rule: 
+> Relapses – stop any 2m arms with > 3 / 10 relapses; stop any 3m arms with > 2 relapses if the 2m arm has stopped, stop whole regimen if have stopped 2m, 3m arms and have > 2 relapses in the 4m arm; or if have > 4 relapses in the 4m arm alone.
+
+
+#### Visualization 
+
+```{r interim-visualization, fig.width = 10, fig.height = 8, fig.cap= "This (or similar) visualization could be generated at the interim point to be able to examine the data for obvious patterns."}
+# date of interim analysis
+interim_date <- df_single %>% 
+  filter((week + enroll.day/7) == max(week + enroll.day/7)) %>% 
+  mutate(interim.week = (week + # date of last visit
+                         enroll.day/7 + #date of enrollment
+                         4)) # 25 days for culture conversion
+
+df_single <- df_single %>% 
+  mutate(observed.relapse = ifelse(status == 1 & eventtime <= 52 - duration, 1, 0),
+              observed.relapse.date.trial = ifelse(observed.relapse == 1, eventtime + duration + enroll.day/7, NA)) %>% 
+  mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim_date$interim.week, 1, 
+                                                          ifelse(observed.relapse == 0, 0, 0))) %>% 
+  mutate(Regimen = paste0("Regimen ", regimen),
+         Duration = factor(duration, levels = c(8,10,12,14,16,26))) 
+
+df_single %>%
+  ggplot(aes(x = enroll.day/7 + patient.visit.week, y = reorder(patient.id, enroll.day), col = Regimen)) + 
+  facet_wrap(~Regimen, scales = "free") +
+  geom_segment(aes(yend = patient.id, x = enroll.day/7 + duration,
+                   xend = 52 + enroll.day/7),
+               col = "darkgray", alpha = 0.4,
+               lty = 1) +
+  geom_segment(aes(yend = patient.id, x = enroll.day/7,
+                   xend = enroll.day/7 + duration,
+                   lty = Duration)) +
+  geom_vline(xintercept = interim_date$interim.week,
+             lty = 2,
+             col = "black") +
+  annotate("text", x = interim_date$interim.week + 6, y = 1.5, label = "Interim 1", col = "black",
+           hjust = 0) +
+  coord_cartesian(xlim = c(0,100)) +
+  scale_y_discrete("Patient enrolment") +
+  scale_x_continuous("Trial time (weeks)") +
+  geom_point(aes(x = observed.relapse.date.trial),
+             pch = 4,
+             col = "black") +
+  ggpubr::theme_pubr() +
+  theme(axis.ticks.y = element_blank(),
+        axis.text.y = element_blank(),
+        legend.position = "right",
+        legend.direction = "vertical")
+```
+
+#### Tables 
+
+```{r relapse-count}
+relapses <- df_single %>% 
+  group_by(regimen, duration, relapses_observed = (!is.na(observed.relapse.date.trial) & observed.relapse.date.trial <= interim_date$interim.week)) %>% 
+  summarise(n_relapses = n_distinct(patient.id)) %>% # for now - participants are generating more than 1 relapse. MUST FIX
+  filter(relapses_observed == TRUE) %>% 
+  dplyr::select(-relapses_observed)
+```
+
+```{r log10ttp-data-eval}
+
+mcmc_output <- mcmc_m1
+
+true.change.slope <- data.frame(regimen = factor(1:5), true.change = c("ref", 0.1, 0.2, 0.3, 0.4))
+pairwise_comparisons_ref <- pairwise_function(mcmc_output) %>% 
+  mutate(regimen = rep(factor(2:5), 2))
+
+# pairwise_confidence_ref <- 
+  
+confidence_best <- map_dfr(as.list(paste0("arm", 1:5)),
+                       ~best_v_rest_function(mcmc_output, bestarm = .x),
+                       .id = "regimen")
+
+best_in_subset_2 <- map_dfr(as.list(paste0("arm", 1:5)), ~best_in_subset_function(mcmc_output,
+                                                        subset.size = 2,
+                                                        true.best = .x),
+                            .id = "regimen") %>% 
+  mutate(regimen = factor(1:5))  %>% 
+  rename(perc.confidence.2 = perc.confidence) %>% 
+  dplyr::select(-subset.size)
+
+best_in_subset_3 <- map_dfr(as.list(paste0("arm", 1:5)), ~best_in_subset_function(mcmc_output,
+                                                        subset.size = 3,
+                                                        true.best = .x),
+                            .id = "regimen") %>% 
+  mutate(regimen = factor(1:5)) %>% 
+  rename(perc.confidence.3 = perc.confidence) %>% 
+  dplyr::select(-subset.size)
+
+```
+
+```{r single-data-table}
+full_table <- full_join(
+  full_join(
+    full_join(
+      full_join(
+        full_join(relapses, 
+                  true.change.slope),
+        pairwise_comparisons_ref),
+      confidence_best),
+    best_in_subset_2),
+  best_in_subset_3)
+  
+
+full_table %>% 
+  filter(vals == "relative slopes" | regimen == 1) %>% 
+  rename(Regimen = regimen,
+         Duration = duration, 
+         `No. relapses` = n_relapses,
+         `True percent change in slope` = true.change,
+         `Est. percent change in slope` = median,
+         CI.l = CI.l,
+         CI.u = CI.u,
+         `P(regimen is best)` = prop_best,
+         `P(regimen is one of top 2 best)` = perc.confidence.2,
+         `P(regimen is one of top 3 best)` = perc.confidence.3) %>% 
+  dplyr::select(-contrast, -vals) %>% 
+  kable(digits = 3,
+        caption = "This (or similar) table could provide a dashboard of useful information for decision-making.") %>% 
+  kable_styling()
+```
+
+
