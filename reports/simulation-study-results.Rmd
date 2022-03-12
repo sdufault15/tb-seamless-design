@@ -7,8 +7,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-**Caution: RESULTS ARE NOT RELIABLE YET**
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE,
@@ -44,22 +42,14 @@ load(here("data","analyzed","2022-02-24_relapse-counts-by-simulation.RData"))
 
 #### Survival Conditions
 
-| Setting | Regimen | Characteristics | Questions of Interest |
-|:-------:|:-------:|:----------------|:----------------------|
-| 1 | 2 | suboptimal, $S_2(52-16) = S_1(26)\times0.95$ | Are we able to identify the best regimen? How often do we discard the best regimen/carry forward the worst regimen at interim?|
-| | 3 | minimal, $S_3(52-12) = S_1(26)$ | |
-| | 4 | minimal, $S_4(52-12) = S_1(26)$ | |
-| | 5 | desirable, $S_5(52-8) = S_1(26)$ | |
+| Setting | Regimen | Characteristics |
+|:-------:|:-------:|:----------------|
+| 1 | 2 | suboptimal, relapse rate is twice that of the control regimen |
+| | 3,4 | minimal, relapse rate is the same as the control regimen |
+| | 5 | desirable, relapse rate is half that of the control regimen |
 | | | | |
-| 2 | 2 | desirable, $S_2(52-8) = S_1(26)$ | What is the risk of having the slope decision-making step when all are good?|
-| | 3 | desirable, $S_3(52-8) = S_1(26)$ | |
-| | 4 | desirable, $S_4(52-8) = S_1(26)$ | |
-| | 5 | desirable, $S_5(52-8) = S_1(26)$ | |
-| | | | |
-| 3 | 2 | minimal, $S_2(52-12) = S_1(26)$ | What is the risk of having the slope decision-making step when all are minimal?|
-| | 3 | minimal, $S_3(52-12) = S_1(26)$ | |
-| | 4 | minimal, $S_4(52-12) = S_1(26)$ | |
-| | 5 | minimal, $S_5(52-12) = S_1(26)$ | |
+| 2 | 2-5 | all are desirable, relapse rate is half that of the control regimen |
+| 3 | 2-5 | all are minimal, relapse rate is the same as the control regimen |
 
 ![Visualization of Situation 1 characteristics](../graphs/exploratory/unnamed-chunk-9-1.png)
 
