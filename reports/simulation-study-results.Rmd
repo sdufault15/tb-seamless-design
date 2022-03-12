@@ -51,11 +51,12 @@ load(here("data","analyzed","2022-02-24_relapse-counts-by-simulation.RData"))
 | 2 | 2-5 | all are desirable, relapse rate is half that of the control regimen |
 | 3 | 2-5 | all are minimal, relapse rate is the same as the control regimen |
 
-![Visualization of Situation 1 characteristics](../graphs/exploratory/unnamed-chunk-9-1.png)
+```{r}
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-mixed.jpg"))
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-all-desirable.jpg"))
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-all-minimal.jpg"))
+```
 
-![Visualization of Situation 2 characteristics](../graphs/exploratory/unnamed-chunk-13-1.png)
-
-![Visualization of Situation 3 characteristics](../graphs/exploratory/unnamed-chunk-14-1.png)
 
 #### log10(TTP) conditions
 
