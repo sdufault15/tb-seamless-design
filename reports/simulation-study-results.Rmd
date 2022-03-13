@@ -573,6 +573,250 @@ bind_rows(df_30,
            end_row = 60) 
 ```
 
+
+### Single Analysis
+
+```{r}
+load(here("data","simulated-datasets","2022-03-06_full-data-nk60-survival-97.RData"))
+
+df_single <- nk_60_outcome_1$nk_60_even[[1]]$s95.situation1
+```
+
+```{r lineplot_enrolment-first-interim-60}
+df_single %>% 
+  ggplot(aes(x = enroll.day/7, y = reorder(patient.id, enroll.day))) +
+  geom_segment(aes(xend = enroll.day/7 + duration,
+                   yend = patient.id,
+                   col = regimen),
+               alpha = 0.1) +
+  geom_segment(aes(x = enroll.day/7 + duration,
+                   xend = enroll.day/7 + 52,
+                   yend = patient.id),
+               col = "darkgray",
+               alpha = 0.2) + 
+  # geom_vline(xintercept = 20,
+  #            lty = 2) + 
+  # geom_hline(yintercept = 150.5) +
+  geom_point(aes(x = eventtime + duration + enroll.day/7),
+             col = "black",
+             pch = 4) +
+  geom_polygon(data = data.frame(x = c(0,0, 100, 100), y = c(150.5,305, 305, 150.5)), 
+               aes(x =x, y = y),
+               fill = "white",
+               alpha = 0.7) +
+  geom_polygon(data = data.frame(x = c(20.5,20.5, 100, 100), y = c(0,150.5, 150.5, 0)), 
+               aes(x =x, y = y),
+               fill = "white",
+               alpha = 0.7) +
+  ggpubr::theme_pubr() + 
+  coord_cartesian(xlim = c(0,55)) +
+  scale_x_continuous("Trial time", 
+                     breaks = c(0,26,52),
+                     labels = c("Jan 2023", "Jun 2023", "Jan 2024")) + 
+  ylab("Patient enrollment") + 
+  scale_color_manual(values = ucsf_col_pal[2:6]) + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_enrolment-first-interim-60.jpg")),
+       device = "jpg",
+       height = 5,
+       width = 5,
+       units = "in")
+```
+
+```{r}
+df_single %>% 
+  mutate(relapse_time = ifelse(status == 1 & (eventtime + duration) <= 52, enroll.day/7 + eventtime + duration, NA)) %>% 
+  group_by(regimen) %>% 
+  filter(relapse_time <= 20) %>% 
+  summarise(`No. relapses` = n_distinct(patient.id)) %>% 
+  kable(caption = "Number of relapses observed per regimen by the first interim analysis.") %>% 
+  kable_styling()
+```
+
+```{r brm-interim1-ex-model, cache = TRUE}
+library(brms)
+m1_interim <- df_single %>% 
+  filter(enroll.day/7 <= 16) %>% 
+  mutate(regimen = as.factor(regimen)) %>% 
+  brm(yij_censored | cens(censored) ~ 1 + week + week:regimen + (1 | patient.id),
+      prior = set_prior("uniform(-1,1)", lb = -1, ub = 1, class = "b"),
+      data = .)
+```
+
+```{r}
+s1 <- summary(m1_interim)
+s1
+
+s1$fixed %>% 
+  kable(digits = 3) %>% 
+  kable_styling()
+
+s1$fixed %>% 
+  rownames_to_column(var = "coef") %>% 
+  ggplot(aes(y = coef)) + 
+  geom_vline(xintercept = 0,
+             lty = 2,
+             col = "darkgray") + 
+  geom_errorbarh(aes(xmin = `l-95% CI`, xmax = `u-95% CI`),
+                 height = 0.2,
+                 alpha = 0.6) + 
+  geom_text(aes(x = `u-95% CI` + 0.05,
+                label = paste0(format(round(Estimate, 3), nsmall = 3),
+                               " (", format(round(`l-95% CI`, 2), nsmall = 2), ", ", format(round(`u-95% CI`, 2),nsmall = 2), ")")),
+            hjust = 0,
+            size = 2) + 
+  geom_point(aes(Estimate),
+             size = 0.6) + 
+  ggpubr::theme_pubr() + 
+  ggtitle("Model Results", subtitle = "Bayesian linear mixed effects model") + 
+  xlab("Coefficient estimate") + 
+  coord_cartesian(xlim = c(0,1.15)) + 
+  scale_y_discrete(labels = c("Intercept", "Control", "Regimen 1", "Regimen 2", "Regimen 3", "Regimen 4")) + 
+  theme(axis.title.y = element_blank())
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_coef-estimates-example-60.jpg")),
+       device = "jpg",
+       width = 4,
+       height = 2.5,
+       units = "in")
+```
+
+
+How confident are we that regimen 4 is better than all other regimens? 
+
+```{r}
+# estimate the MCMC slopes
+fit2 <- as_draws_df(m1_interim) %>% 
+  transmute(
+    regimen1 = `b_week`,
+    regimen2 = `b_week` + `b_week:regimen2`,
+    regimen3 = `b_week` + `b_week:regimen3`,
+    regimen4 = `b_week` + `b_week:regimen4`,
+    regimen5 = `b_week` + `b_week:regimen5`
+  )
+
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_best-v-rest-bayes-function.R")
+best_v_rest_function <- function(df, bestarm = NULL){
+  if(is.null(bestarm) == TRUE){
+    ests <- apply(df, 2, median) # trial-level best estimated arm
+    bestarm <- names(ests[which(ests == max(ests))])
+  }
+  otherarms <- setdiff(names(df), bestarm)
+  
+  best_v_rest <- mean(df[,bestarm] > df[,otherarms[1]] & 
+                        df[,bestarm] > df[,otherarms[2]] &
+                        df[,bestarm] > df[,otherarms[3]] &
+                        df[,bestarm] > df[,otherarms[4]])
+  data.frame(prop_best = best_v_rest,
+             bestarm = bestarm)
+}
+
+regimen_list <- as.list(paste0("regimen", 1:5))
+names <- paste0("regimen", 1:5)
+map_dfr(regimen_list, ~best_v_rest_function(fit2, bestarm = .x),
+    .id = "regimen") %>% 
+  kable(digits = 4) %>% 
+  kable_styling()
+```
+
+How confident are we that our chosen subset contains the best regimen? 
+
+```{r}
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_best-in-topk-bayes-function.R")
+
+map_dfr(as.list(1:4), ~p6_function(df = fit2,
+                                  subset.size = .x,
+                                  true.best = "regimen5"))
+```
+
+How certain can we be that the rate of change in log10(TTP) for any regimen is different from the rate of change for the control?
+
+```{r}
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_pairwise-comparisons-bayes-function.R")
+
+fit2 %>% 
+  mutate(diff2 = as.numeric(regimen2 - regimen1 > 0),
+         diff3 = as.numeric(regimen3 - regimen1 > 0),
+         diff4 = as.numeric(regimen4 - regimen1 > 0),
+         diff5 = as.numeric(regimen5 - regimen1 > 0)) %>% 
+  dplyr::select(diff2:diff5) %>% 
+  pivot_longer(names_to = "difference",
+               values_to = "prop",
+               cols = 1:4) %>% 
+  group_by(difference) %>% 
+  summarise(prop = mean(prop)) %>% 
+  ggplot(aes(x = difference, y = prop, fill = difference)) + 
+  geom_bar(stat = "identity",
+           width = 0.5) + 
+  geom_text(aes(y = prop + 0.05,
+                label = round(prop, 3))) + 
+  scale_fill_manual(values = ucsf_col_pal[2:5]) + 
+  ggpubr::theme_pubclean() + 
+  scale_x_discrete(labels = c("Regimen 1 v. Control",
+                              "Regimen 2 v. Control",
+                              "Regimen 3 v. Control",
+                              "Regimen 4 v. Control")) +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = -30,
+                                   hjust = 0),
+        plot.margin = margin(6,41,6,6),
+        legend.position = "none") + 
+  ylab("P(regimen > control)")
+
+fit2 %>% 
+  pairwise_function() %>% 
+  filter(vals == "relative slopes") %>% 
+  ggplot(aes(x = contrast)) + 
+  geom_point(aes(y = median*100)) + 
+  geom_errorbar(aes(ymin = CI.l*100,
+                    ymax = CI.u*100),
+                width = 0.3) + 
+  coord_cartesian(ylim = c(-10,100)) +
+  geom_text(aes(y = median*100,
+                label = paste0(round(median*100,2), "%")),
+            hjust = -0.15,
+            size = 3) +
+  scale_x_discrete(labels = c("Regimen 1 v. Control",
+                              "Regimen 2 v. Control",
+                              "Regimen 3 v. Control",
+                              "Regimen 4 v. Control")) +
+  ylab("Credible estimate of\npairwise difference in slope (%)") + 
+  theme_bw() + 
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = -30,
+                                   hjust = 0),
+        plot.margin = margin(6,45,6,6),
+        legend.position = "none") 
+  
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_pointplot-credible-estimates-ex-60.jpg")),
+       device = "jpg",
+       width = 5,
+       height = 5,
+       units = "in")
+```
+
+```{r}
+
+# med1 <- median(fit2$regimen1)
+# fit2 %>% 
+#   ggplot(aes(x = regimen5)) + 
+#   geom_histogram() + 
+#   geom_vline(xintercept = med1)
+```
+
 <!-- ```{r sim-study-relapse-table, cache=TRUE} -->
 <!-- sit.names <- unique(df_relapses_even$setting) -->
 <!-- sit.names <- str_replace(str_replace(str_replace(sit.names, pattern = "situation1", " Mixed."), -->
