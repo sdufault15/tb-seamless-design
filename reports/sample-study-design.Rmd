@@ -22,7 +22,8 @@ library(survminer)
 library(latex2exp)
 ```
 
-```{r initial-data-setup}
+```{r initial-data-setup, eval = FALSE}
+# REMOVE
 # Call in model being used as "truth"
 files <- file.info(list.files("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/data/bayes-generated/", full.names = T))
 file_interest <- files[stringr::str_detect(rownames(files), "remox-lmm-short_lower-detection-25"),]
@@ -184,9 +185,7 @@ We'll consider the following:
 + $S(26) = \{0.97, 0.95, 0.90\}$
 
 ```{r weibull-function}
-weibull_function <- function(lambda, p, surv.prop, t){
-  exp(-lambda*t^p) - surv.prop
-}
+source(here("lib", "weibull-survival-function.R"))
 
 p = seq(0.4:0.9, by = 0.025)
 surv.prop = c(0.97, 0.95, 0.9)
