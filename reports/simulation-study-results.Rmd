@@ -1345,6 +1345,18 @@ ggsave(filename = here("graphs", "simulation-results",
        units = "in")
 ```
 
+
+### Timelines
+
+```{r}
+interim_time_fun <- function(nk, e.rate, ){
+  
+}
+df_timeline <- data.frame(nk = c(30,60),
+                          )
+```
+
+
 <!-- ```{r sim-study-relapse-table, cache=TRUE} -->
 <!-- sit.names <- unique(df_relapses_even$setting) -->
 <!-- sit.names <- str_replace(str_replace(str_replace(sit.names, pattern = "situation1", " Mixed."), -->
