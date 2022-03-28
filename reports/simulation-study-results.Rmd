@@ -1356,6 +1356,12 @@ df_timeline <- data.frame(nk = c(30,60),
                           )
 ```
 
+## R Version
+
+```{r echo = TRUE, tidy = TRUE}
+R.version
+```
+
 
 <!-- ```{r sim-study-relapse-table, cache=TRUE} -->
 <!-- sit.names <- unique(df_relapses_even$setting) -->
