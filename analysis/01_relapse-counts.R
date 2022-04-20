@@ -22,7 +22,7 @@ relapse_count_function <- function(simdf){
     group_by(regimen, duration, 
              relapses_observed = (!is.na(observed.relapse.date.trial) & 
                                     observed.relapse.date.trial <= interim_date$interim.week)) %>% 
-    summarise(n_relapses = n_distinct(patient.id)) %>%  # for now - participants are generating more than 1 relapse. MUST FIX
+    summarise(n_relapses = n_distinct(patient.id)) %>%
     filter(relapses_observed == TRUE) %>% 
     dplyr::select(-relapses_observed)
   
