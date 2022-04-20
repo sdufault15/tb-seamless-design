@@ -25,6 +25,12 @@
 + `simulation-overview.html` [NEEDS UPDATING] should contain an ADEMP map of the project
 + `2022-03-10_simulation-study-results.html` old report containing information that was lost when OS updated
 
+### analysis
+
++ `00_run-all.R` This script sets up the analysis of the survival and TTP data for the 30, 40, 60, and 80 participant per arm datasets. The following scripts are written generally as they are specifically written to be run from this base script.
++ `01_relapse-counts.R` This script counts the number of relapses that happen per regimen by the interim analysis (defined within) for each simulation. All results are stored in the `data/analyzed` folder with `[DATE]_relapse-counts-by-simulation_[nk]` included in the filename.
++ `02_advance-ttp.R` This script examines the TTP MCMC chains and estimates 1) the probability that each novel regimen is better than the control (% confidence), and 2) the probability that each novel regimen is one of the top 2 regimens. It returns a list of dataframes containing the probability that each novel regimen would advance on the basis of meeting a particular threshold set on estimates 1 and 2. All results are stored in the `data/analyzed` folder with `[DATE]_sim-level-ttp-results_[nk]` in the filename.
++ `03_advance-relapse.R` This script is very similar to `01_relapse-counts.R`. **Will need to review.** All results are stored in the `data/analyzed` folder with `[DATE]_s9*-situation*-results_` in the filename.
 
 ### lib
 
