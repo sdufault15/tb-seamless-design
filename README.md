@@ -12,6 +12,20 @@
 + `81_generate-roc-plots_stopping.R` [TEMPORARY] file for generating pseudo-ROC plots with operating characteristics when a threshold has been set on the observed and true "futility" criteria.
 + `99_saving-smaller-bayes-objects.R` file for taking some of the earlier model results (quite big) and extracting the smaller components needed for analysis.
 
+### reports
+
++ `sample-study-design.Rmd` describes the set-up for the simulated datasets
++ `simulation-study-results.Rmd` is the larger comprehensive file containing all analysis results from all simulated datasets
++ `simulation-overview.Rmd` [NEEDS UPDATING] should contain an ADEMP map of the project
+
+### docs
+
++ `sample-study-design.html` describes the set-up for the simulated datasets
++ `simulation-study-results.html` is the larger comprehensive file containing all analysis results from all simulated datasets
++ `simulation-overview.html` [NEEDS UPDATING] should contain an ADEMP map of the project
++ `2022-03-10_simulation-study-results.html` old report containing information that was lost when OS updated
+
+
 ### lib
 
 | filename | description | input | output | 
