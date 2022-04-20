@@ -31,6 +31,7 @@
 + `01_relapse-counts.R` This script counts the number of relapses that happen per regimen by the interim analysis (defined within) for each simulation. All results are stored in the `data/analyzed` folder with `[DATE]_relapse-counts-by-simulation_[nk]` included in the filename.
 + `02_advance-ttp.R` This script examines the TTP MCMC chains and estimates 1) the probability that each novel regimen is better than the control (% confidence), and 2) the probability that each novel regimen is one of the top 2 regimens. It returns a list of dataframes containing the probability that each novel regimen would advance on the basis of meeting a particular threshold set on estimates 1 and 2. All results are stored in the `data/analyzed` folder with `[DATE]_sim-level-ttp-results_[nk]` in the filename.
 + `03_advance-relapse.R` This script is very similar to `01_relapse-counts.R`. **Will need to review.** All results are stored in the `data/analyzed` folder with `[DATE]_s9*-situation*-results_` in the filename.
++ `survival-curves_situation-fixed-duration*` files to generate the figures for each survival setting (e.g. mixed, all minimal, all desirable).
 
 ### lib
 
