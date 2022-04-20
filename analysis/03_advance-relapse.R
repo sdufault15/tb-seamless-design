@@ -105,7 +105,7 @@ save(s90.situation3.results,
                  paste0(Sys.Date(), "_s90-situation3-results_", identifier, ".RData")))
 
 ######################
-# S(t) = 0.9
+# S(t) = 0.95
 ######################
 
 plan(multisession)
