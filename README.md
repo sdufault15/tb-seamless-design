@@ -2,6 +2,16 @@
 
 ## Files included in repository
 
+### munge
+
++ `0*_nk-30_*.R` these files take the sample size of 30 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. *These scripts correspond to a duration-randomized design such that 6 participants per regimen are assigned to 8, 10, 12, 14, or 16 weeks of treatment. Survival outcomes are specified with respect to particular durations.*  
++ `2*_nk-30_*_fixed-duration.R` these files take the sample size of 30 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. *These scripts correspond to a fixed 4 month duration of each novel treatment.* 
++ `3*` these files simulate TTP and survival outcomes for sample sizes of 60 and 80 per regimen. These scripts correspond to a fixed 4 month duration of each novel treatment.
++ `4*` these files take the sample size of 40 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. These scripts correspond to a fixed 4 month duration of each novel treatment.
++ `80_generate-pointplots_prob-stopping.R` [TEMPORARY] file for generating point plot with probability of stopping versus true TTP and true relapse rate
++ `81_generate-roc-plots_stopping.R` [TEMPORARY] file for generating pseudo-ROC plots with operating characteristics when a threshold has been set on the observed and true "futility" criteria.
++ `99_saving-smaller-bayes-objects.R` file for taking some of the earlier model results (quite big) and extracting the smaller components needed for analysis.
+
 ### lib
 
 | filename | description | input | output | 
