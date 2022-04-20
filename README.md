@@ -49,4 +49,7 @@
 ### sandbox
 
 + `2022-03-selecting-from-three.*` the Rmd and html walking through how we expect things to change given we were using 3 novel regimens rather than four. Can be moved to main folders, but will need to be de-identified first
++ Brainstorming of seamless study with collaborators (.docx)
++ PPTX walking through the more complex survival scenarios when multiple durations were being considered
++ draft tables for presenting results (.docx)
 
