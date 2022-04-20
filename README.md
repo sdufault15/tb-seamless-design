@@ -44,4 +44,9 @@
 |log-hazard-function.R | This takes the data `x` (dataframe), coefficients `betas` (named vector), and time `t` (numeric) and returns the log-hazard |  <ul><li>`t`</li><li>`betas`</li><li>`x`</li></ul> | log-hazard. Used by the `simsurv` function to simulate survival data.| 
 | weibull-survival-function.R | The Weibull survival function (used for root-finding) | <li>`lambda`</li><li> `p`  </li><li> `surv.prop` proportion survived </li><li> `t` time t | |
 
-## Files excluded in repository
+## Files excluded from repository
+
+### sandbox
+
++ `2022-03-selecting-from-three.*` the Rmd and html walking through how we expect things to change given we were using 3 novel regimens rather than four. Can be moved to main folders, but will need to be de-identified first
+
