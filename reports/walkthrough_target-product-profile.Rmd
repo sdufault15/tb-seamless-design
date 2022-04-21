@@ -40,7 +40,13 @@ tau_lrv <- 0.025 # false go risk
   
 ## Single Example
 
-In a single study, we can visualize this in a handful of ways. 
+In a single study, we can visualize this in a handful of ways. Below is an example from the simulated data comparing 4 novel regimens against a control with 30 participants assigned per regimen. **Panel A** shows the posterior distributions for the estimated % increase in log10(TTP) slope of each regimen relative to the control regimen. **Panel B** shows the Bayesian credible intervals for each regimen. These are used for decision-making.
+
+In this example:
+
++ $\theta_{LRV} =$ 0% 
++ $\theta_{TV}=$ 20%
++ $\tau_{LRV} = \tau_{TV} = 2.5$%
 
 ```{r tpp-posterior-distribution-example, fig.width = 10, fig.height = 5, fig.cap = "Recreation of Figure 1 from Pulkstenis et al."}
   # Convert to % relative to control
@@ -115,3 +121,87 @@ ggpubr::ggarrange(p1, p2, nrow = 1, widths = c(3,2))
 ```
 
 ## Across Simulations
+
+```{r barplot_decision-probabilities, fig.width = 8, fig.height = 5}
+decisions <- mcmc_mods_even_30 %>% 
+  map_dfr(
+    # Convert to % relative to control
+    ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
+            `Regimen 2` = ((arm3/arm1) - 1)*100,
+            `Regimen 3` = ((arm4/arm1) - 1)*100,
+            `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
+      dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
+      pivot_longer(cols = 1:4,
+                   names_to = "Regimen",
+                   values_to = "Slope, %") %>% 
+      group_by(Regimen) %>% 
+      summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
+                CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
+      mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                  ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                  TRUE ~ "Consider")),
+    .id = "sim")
+
+p3 <- decisions %>% 
+  group_by(Regimen, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+  ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Consider", "GO"),
+                    labels = c("NO-GO", "Consider", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete("Relative Slope, %",
+                   labels = c("10%", "20%", "30%", "40%")) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+
+decisions_40 <- mcmc_mods_even_40 %>% 
+  map_dfr(
+    # Convert to % relative to control
+    ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
+            `Regimen 2` = ((arm3/arm1) - 1)*100,
+            `Regimen 3` = ((arm4/arm1) - 1)*100,
+            `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
+      dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
+      pivot_longer(cols = 1:4,
+                   names_to = "Regimen",
+                   values_to = "Slope, %") %>% 
+      group_by(Regimen) %>% 
+      summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
+                CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
+      mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                  ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                  TRUE ~ "Consider")),
+    .id = "sim")
+
+p4 <- decisions_40 %>% 
+  group_by(Regimen, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+  ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Consider", "GO"),
+                    labels = c("NO-GO", "Consider", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete("Relative Slope, %",
+                   labels = c("10%", "20%", "30%", "40%")) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 40$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+
+ggpubr::ggarrange(p3, p4, nrow = 1)
+```
