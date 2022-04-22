@@ -380,3 +380,70 @@ p5 <- decisions_20 %>%
 
 ggpubr::ggarrange(p5, p3, p4, nrow = 1, common.legend = TRUE)
 ```
+
+### Varying the TPP width
+
+Fixing the TV at 20%.
+
+```{r barplot_decision-probabilities_even_varying-tpp, fig.width = 6, fig.height = 6}
+theta_lrv <- as.list(seq(0,15,by = 3))
+names(theta_lrv) <- theta_lrv
+theta_tv <- as.list(rep(20,length(theta_lrv)))
+names(theta_tv) <- theta_tv
+
+output <- NULL
+for (i in 1:length(theta_lrv)){
+  temp <- mcmc_mods_even_30 %>% 
+    map_dfr(
+      # Convert to % relative to control
+      ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
+              `Regimen 2` = ((arm3/arm1) - 1)*100,
+              `Regimen 3` = ((arm4/arm1) - 1)*100,
+              `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
+        dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
+        pivot_longer(cols = 1:4,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv[[i]] ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv[[i]]) & (CI.975 > theta_tv[[i]])) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Consider")),
+      .id = "sim") %>% 
+    mutate(theta_tv = theta_tv[[i]],
+           theta_lrv = theta_lrv[[i]])
+  
+  output <- bind_rows(output, temp)
+}
+
+
+output %>% 
+  group_by(Regimen, Decision, theta_lrv) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, theta_lrv) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO")),
+         Regimen = case_when(Regimen == "Regimen 1" ~ "10% Slope Increase",
+                             Regimen == "Regimen 2" ~ "20% Slope Increase",
+                             Regimen == "Regimen 3" ~ "30% Slope Increase",
+                             TRUE ~ "40% Slope Increase")) %>% 
+  ggplot(aes(x = theta_lrv, y = Probability, fill = Decision)) + 
+  facet_wrap(~Regimen) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Consider", "GO"),
+                    labels = c("NO-GO", "Consider", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_continuous(TeX("$\\theta_{LRV}$, %"),
+                     breaks = seq(0,15,by = 3),
+                     labels = seq(0,15,by = 3)) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+
+
+```
