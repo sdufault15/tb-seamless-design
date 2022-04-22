@@ -1,7 +1,7 @@
 ---
 title: "Target Product Profile"
 author: "Suzanne Dufault"
-date: "`r Sys.Date()"
+date: "`r Sys.Date()`"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -49,7 +49,7 @@ In this example:
 + $\theta_{TV}=$ 20%
 + $\tau_{LRV} = \tau_{TV} = 2.5$%
 
-```{r tpp-posterior-distribution-example, fig.width = 10, fig.height = 5, fig.cap = "Recreation of Figure 1 from Pulkstenis et al."}
+```{r tpp-posterior-distribution-example, fig.width = 12, fig.height = 5, fig.cap = "Recreation of Figure 1 from Pulkstenis et al."}
   # Convert to % relative to control
 p1 <- mcmc_mods_even_30[[1]] %>% 
   mutate(`Regimen 1` = ((arm2/arm1) - 1)*100,
@@ -102,14 +102,16 @@ p2 <- mcmc_mods_even_30[[1]] %>%
                    col = Decision),
                lwd = 1) + 
   ggpubr::theme_pubr() + 
-  geom_segment(aes(x = 0, xend = 0, y = 0, yend = 4.45), lty = 2) + 
+  geom_segment(aes(x = 0, xend = 0, y = 0, yend = 4.45), 
+               lty = 2) + 
   scale_color_manual(values = c(ucsf_col_pal[4], ucsf_col_pal[8], "red"),
                      breaks = c("GO", "Consider", "NO-GO"),
                      labels = c("GO", "Consider", "NO-GO"),
                      drop = FALSE) +
-  geom_segment(aes(x = 20, xend = 20, y = 0, yend = 4.45), lty = 2) + 
-  annotate(geom = "text", x = 0, y = -0.1, label = TeX("$\\theta_{LRV}$"), vjust = 0) +
-  annotate(geom = "text", x = 20, y = -0.1, label = TeX("$\\theta_{TV}$"), vjust = 0) +
+  geom_segment(aes(x = 20, xend = 20, y = 0, yend = 4.45), 
+               lty = 2) + 
+  annotate(geom = "text", x = 0, y = -0.2, label = TeX("$\\theta_{LRV}$"), vjust = 0) +
+  annotate(geom = "text", x = 20, y = -0.2, label = TeX("$\\theta_{TV}$"), vjust = 0) +
   scale_x_continuous("95% Credible Interval on Relative Slope, %", 
                      breaks = seq(0,100,by = 10),
                      labels = seq(0,100,by = 10)) +
@@ -123,7 +125,7 @@ ggpubr::ggarrange(p1, p2, nrow = 1, widths = c(3,2))
 
 ## Across Simulations
 
-```{r barplot_decision-probabilities, fig.width = 8, fig.height = 4}
+```{r barplot_decision-probabilities, fig.width = 12, fig.height = 4}
 decisions <- mcmc_mods_even_30 %>% 
   map_dfr(
     # Convert to % relative to control
