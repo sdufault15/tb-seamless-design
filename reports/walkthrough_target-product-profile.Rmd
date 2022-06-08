@@ -73,9 +73,9 @@ p1 <- mcmc_mods_even_30[[1]] %>%
   annotate(geom = "text", x = 30, y = -0.001, label = "Target Case") + 
   scale_x_continuous(breaks = seq(-30,100,by = 10),
                      labels = seq(-30,100,by = 10)) +
+  ylab("Posterior probability distribution") +
   scale_fill_manual(values = ucsf_col_pal) + 
-  theme(axis.title = element_blank(),
-        legend.position = "bottom")
+  theme(legend.position = "bottom")
 
   # Convert to % relative to control
 p2 <- mcmc_mods_even_30[[1]] %>% 
