@@ -3,6 +3,7 @@
 ##############################################
 library(dplyr)
 library(tidyr)
+library(purrr)
 library(parallelly)
 library(brms)
 source("~/tb-seamless/lib/df_extract-mcmc-slopes-function.R")

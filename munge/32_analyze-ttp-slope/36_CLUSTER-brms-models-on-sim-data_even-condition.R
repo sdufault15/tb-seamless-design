@@ -3,6 +3,7 @@
 ##############################################
 library(dplyr)
 library(tidyr)
+library(purrr)
 library(brms)
 library(parallelly)
 source("~/tb-seamless/lib/df_extract-mcmc-slopes-function.R")
@@ -27,9 +28,9 @@ nk_20 <- df_sims_s1[sims] %>%
 rm(df_sims_s1)
 
 mods_even_20 <- map(nk_20,
-                    model,
-                    data = .x,
-                    prior = priors)
+                    ~brm(model,
+                         data = .x,
+                         prior = priors))
 # Save the model results
 summary_mods_even_20 <- map(mods_even_20,
                             ~summary(.x))
@@ -98,9 +99,9 @@ nk_40 <- df_sims_s1[sims] %>%
 rm(df_sims_s1)
 
 mods_even_40 <- map(nk_40,
-                    model,
-                    data = .x,
-                    prior = priors)
+                    ~brm(model,
+                         data = .x,
+                         prior = priors))
 # Save the model results
 summary_mods_even_40 <- map(mods_even_40,
                             ~summary(.x))
