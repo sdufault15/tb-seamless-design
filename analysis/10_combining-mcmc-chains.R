@@ -11,7 +11,7 @@ library(assertthat) # for defensive programming
 # Nk = 20
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_even-condition_mcmc-100.RData"))
 mcmc_100 <- mcmc_mods_even_20; rm(mcmc_mods_even_20)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_even-condition_mcmc-201.RData"))
+load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_even-condition_mcmc-200.RData"))
 mcmc_200 <- mcmc_mods_even_20; rm(mcmc_mods_even_20)
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_even-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_even_20; rm(mcmc_mods_even_20)
@@ -51,7 +51,7 @@ rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mc
 # Nk = 30
 load(here("data", "bayes-generated", "2022-06-14_simulated-lmm_random-slope_lod-25_nk-30_even-condition_mcmc-100.RData"))
 mcmc_100 <- mcmc_mods_even_30; rm(mcmc_mods_even_30)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_even-condition_mcmc-201.RData"))
+load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_even-condition_mcmc-200.RData"))
 mcmc_200 <- mcmc_mods_even_30; rm(mcmc_mods_even_30)
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_even-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_even_30; rm(mcmc_mods_even_30)
@@ -93,7 +93,7 @@ rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mc
 # Nk = 40
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_even-condition_mcmc-100.RData"))
 mcmc_100 <- mcmc_mods_even_40; rm(mcmc_mods_even_40)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_even-condition_mcmc-201.RData"))
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-40_even-condition_mcmc-200.RData"))
 mcmc_200 <- mcmc_mods_even_40; rm(mcmc_mods_even_40)
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_even-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_even_40; rm(mcmc_mods_even_40)
@@ -211,11 +211,11 @@ rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mc
 
 ############  HIGH ############################################################
 # Nk = 20
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-100.RData"))
+load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-100.RData"))
 mcmc_100 <- mcmc_mods_high_20; rm(mcmc_mods_high_20)
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-201.RData"))
 mcmc_200 <- mcmc_mods_high_20; rm(mcmc_mods_high_20)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-300.RData"))
+load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_high_20; rm(mcmc_mods_high_20)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-400.RData"))
 mcmc_400 <- mcmc_mods_high_20; rm(mcmc_mods_high_20)
@@ -232,16 +232,16 @@ mcmc_900 <- mcmc_mods_high_20; rm(mcmc_mods_high_20)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_high-condition_mcmc-1000.RData"))
 mcmc_1000 <- mcmc_mods_high_20; rm(mcmc_mods_high_20)
 
-mcmc_mods_high_20 <- c(#mcmc_100, 
+mcmc_mods_high_20 <- c(mcmc_100, 
                        mcmc_200, 
-                      # mcmc_300,
+                       mcmc_300,
                        mcmc_400,
                        mcmc_500, 
                        mcmc_600,
                        mcmc_700,
                        mcmc_800,
-                       mcmc_900)#,
-                       # mcmc_1000) 
+                       mcmc_900,
+                       mcmc_1000)
 
 assert_that(length(mcmc_mods_high_20) == 1000)
 
@@ -251,11 +251,11 @@ save(mcmc_mods_high_20,
 rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mcmc_900,mcmc_1000) 
 
 # Nk = 30
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_high-condition_mcmc-100.RData"))
-mcmc_100 <- mcmc_mods_high_30; rm(mcmc_mods_high_30)
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_high-condition_mcmc-100.RData"))
+# mcmc_100 <- mcmc_mods_high_30; rm(mcmc_mods_high_30)
 load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_high-condition_mcmc-201.RData"))
 mcmc_200 <- mcmc_mods_high_30; rm(mcmc_mods_high_30)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_high-condition_mcmc-300.RData"))
+load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_high-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_high_30; rm(mcmc_mods_high_30)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_high-condition_mcmc-400.RData"))
 mcmc_400 <- mcmc_mods_high_30; rm(mcmc_mods_high_30)
@@ -291,37 +291,37 @@ save(mcmc_mods_high_30,
 rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mcmc_900,mcmc_1000) 
 
 # Nk = 40
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-100.RData"))
-mcmc_100 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-201.RData"))
-mcmc_200 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-300.RData"))
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-100.RData"))
+# mcmc_100 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-201.RData"))
+# mcmc_200 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-400.RData"))
-mcmc_400 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-500.RData"))
-mcmc_500 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-600.RData"))
-mcmc_600 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-700.RData"))
-mcmc_700 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-800.RData"))
+# load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-400.RData"))
+# mcmc_400 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+# load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-500.RData"))
+# mcmc_500 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+# load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-600.RData"))
+# mcmc_600 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+# load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-700.RData"))
+# mcmc_700 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-800.RData"))
 mcmc_800 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-900.RData"))
-mcmc_900 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-1000.RData"))
+# load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-900.RData"))
+# mcmc_900 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-40_high-condition_mcmc-1000.RData"))
 mcmc_1000 <- mcmc_mods_high_40; rm(mcmc_mods_high_40)
 
-mcmc_mods_high_40 <- c(mcmc_100, 
-                       mcmc_200, 
-                       # mcmc_300,
-                       mcmc_400,
-                       mcmc_500, 
-                       mcmc_600,
-                       mcmc_700,
-                       # mcmc_800,
-                       mcmc_900)#,
-# mcmc_1000) 
+mcmc_mods_high_40 <- c(#mcmc_100, 
+                       # mcmc_200, 
+                       mcmc_300,
+                       # mcmc_400,
+                       # mcmc_500, 
+                       # mcmc_600,
+                       # mcmc_700,
+                       mcmc_800,
+                       # mcmc_900,
+                       mcmc_1000)
 
 assert_that(length(mcmc_mods_high_40) == 1000)
 
@@ -397,7 +397,7 @@ mcmc_mods_high_80 <- c(mcmc_100,
                        mcmc_300,
                        mcmc_400,
                        mcmc_500, 
-                      # mcmc_600,
+                       mcmc_600,
                        mcmc_700,
                        mcmc_800,
                        mcmc_900,
@@ -413,11 +413,11 @@ rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mc
 
 ############  HIGH-LOW ############################################################
 # Nk = 20
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-100.RData"))
-mcmc_100 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-201.RData"))
-mcmc_200 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-300.RData"))
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-100.RData"))
+# mcmc_100 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-201.RData"))
+# mcmc_200 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-400.RData"))
 mcmc_400 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
@@ -427,23 +427,23 @@ load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-
 mcmc_600 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-700.RData"))
 mcmc_700 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-800.RData"))
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-800.RData"))
 mcmc_800 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-900.RData"))
 mcmc_900 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-1000.RData"))
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-20_highlow-condition_mcmc-1000.RData"))
 mcmc_1000 <- mcmc_mods_highlow_20; rm(mcmc_mods_highlow_20)
 
 mcmc_mods_highlow_20 <- c(#mcmc_100, 
-  mcmc_200, 
-  # mcmc_300,
+  # mcmc_200, 
+  mcmc_300,
   mcmc_400,
   mcmc_500, 
   mcmc_600,
   mcmc_700,
   mcmc_800,
-  mcmc_900)#,
-# mcmc_1000) 
+  mcmc_900,
+  mcmc_1000)
 
 assert_that(length(mcmc_mods_highlow_20) == 1000)
 
@@ -453,13 +453,13 @@ save(mcmc_mods_highlow_20,
 rm(mcmc_100, mcmc_200, mcmc_300,mcmc_400,mcmc_500, mcmc_600,mcmc_700,mcmc_800,mcmc_900,mcmc_1000) 
 
 # Nk = 30
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-100.RData"))
-mcmc_100 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-201.RData"))
-mcmc_200 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
-load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-300.RData"))
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-100.RData"))
+# mcmc_100 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
+# load(here("data", "bayes-generated", "2022-06-15_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-201.RData"))
+# mcmc_200 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-300.RData"))
 mcmc_300 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-400.RData"))
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-400.RData"))
 mcmc_400 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-500.RData"))
 mcmc_500 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
@@ -467,23 +467,23 @@ load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-
 mcmc_600 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
 load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-700.RData"))
 mcmc_700 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-800.RData"))
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-800.RData"))
 mcmc_800 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-900.RData"))
-mcmc_900 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
-load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-1000.RData"))
+# load(here("data", "bayes-generated", "2022-06-16_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-900.RData"))
+# mcmc_900 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
+load(here("data", "bayes-generated", "2022-06-17_simulated-lmm_random-slope_lod-25_nk-30_highlow-condition_mcmc-1000.RData"))
 mcmc_1000 <- mcmc_mods_highlow_30; rm(mcmc_mods_highlow_30)
 
 mcmc_mods_highlow_30 <- c(#mcmc_100, 
-  mcmc_200, 
-  # mcmc_300,
+  # mcmc_200, 
+  mcmc_300,
   mcmc_400,
   mcmc_500, 
   mcmc_600,
   mcmc_700,
-  # mcmc_800,
-  mcmc_900)#,
-# mcmc_1000) 
+  mcmc_800,
+  # mcmc_900,
+  mcmc_1000)
 
 assert_that(length(mcmc_mods_highlow_30) == 1000)
 
