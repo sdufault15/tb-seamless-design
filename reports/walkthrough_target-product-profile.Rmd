@@ -92,8 +92,8 @@ p2 <- mcmc_mods_even_30[[1]] %>%
             CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
   mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                               ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                              TRUE ~ "Consider")) %>% 
-  mutate(Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+                              TRUE ~ "Continue")) %>% 
+  mutate(Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ungroup() %>% 
   mutate(nr = row_number()) %>% 
   ggplot() + 
@@ -105,8 +105,8 @@ p2 <- mcmc_mods_even_30[[1]] %>%
   geom_segment(aes(x = 0, xend = 0, y = 0, yend = 4.45), 
                lty = 2) + 
   scale_color_manual(values = c(ucsf_col_pal[4], ucsf_col_pal[8], "red"),
-                     breaks = c("GO", "Consider", "NO-GO"),
-                     labels = c("GO", "Consider", "NO-GO"),
+                     breaks = c("GO", "Continue", "NO-GO"),
+                     labels = c("GO", "Continue", "NO-GO"),
                      drop = FALSE) +
   geom_segment(aes(x = 20, xend = 20, y = 0, yend = 4.45), 
                lty = 2) + 
@@ -142,7 +142,7 @@ decisions <- mcmc_mods_even_30 %>%
                 CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
       mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                   ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                  TRUE ~ "Consider")),
+                                  TRUE ~ "Continue")),
     .id = "sim")
 
 decisions_40 <- mcmc_mods_even_40 %>% 
@@ -161,7 +161,7 @@ decisions_40 <- mcmc_mods_even_40 %>%
                 CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
       mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                   ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                  TRUE ~ "Consider")),
+                                  TRUE ~ "Continue")),
     .id = "sim")
 
 decisions_20 <- mcmc_mods_even_20 %>% 
@@ -180,7 +180,7 @@ decisions_20 <- mcmc_mods_even_20 %>%
                 CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
       mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                   ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                  TRUE ~ "Consider")),
+                                  TRUE ~ "Continue")),
     .id = "sim")
 
 p3 <- decisions %>% 
@@ -188,11 +188,11 @@ p3 <- decisions %>%
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -209,11 +209,11 @@ p4 <- decisions_40 %>%
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -231,11 +231,11 @@ p5 <- decisions_20 %>%
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -257,7 +257,7 @@ load("~/OneDrive - University of California, San Francisco/ucsf-research/phase2b
 ```
 
 ```{r barplot_decision-probabilities_highlow, fig.width = 12, fig.height = 4}
-decisions <- mcmc_mods_highlow_30 %>% 
+decisions_hl <- mcmc_mods_highlow_30 %>% 
   map_dfr(
     # Convert to % relative to control
     ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
@@ -273,10 +273,10 @@ decisions <- mcmc_mods_highlow_30 %>%
                 CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
       mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                   ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                  TRUE ~ "Consider")),
+                                  TRUE ~ "Continue")),
     .id = "sim")
 
-decisions_40 <- mcmc_mods_highlow_40 %>% 
+decisions_40_hl <- mcmc_mods_highlow_40 %>% 
   map_dfr(
     # Convert to % relative to control
     ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
@@ -292,10 +292,10 @@ decisions_40 <- mcmc_mods_highlow_40 %>%
                 CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
       mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                   ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                  TRUE ~ "Consider")),
+                                  TRUE ~ "Continue")),
     .id = "sim")
 
-decisions_20 <- mcmc_mods_highlow_20 %>% 
+decisions_20_hl <- mcmc_mods_highlow_20 %>% 
   map_dfr(
     # Convert to % relative to control
     ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
@@ -311,19 +311,19 @@ decisions_20 <- mcmc_mods_highlow_20 %>%
                 CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
       mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                   ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                  TRUE ~ "Consider")),
+                                  TRUE ~ "Continue")),
     .id = "sim")
 
-p3 <- decisions %>% 
+p3 <- decisions_hl %>% 
   group_by(Regimen, Decision) %>% 
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -335,16 +335,16 @@ p3 <- decisions %>%
   ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
   theme(legend.position = "bottom")
 
-p4 <- decisions_40 %>% 
+p4 <- decisions_40_hl %>% 
   group_by(Regimen, Decision) %>% 
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -357,16 +357,16 @@ p4 <- decisions_40 %>%
   theme(legend.position = "bottom")
 
 
-p5 <- decisions_20 %>% 
+p5 <- decisions_20_hl %>% 
   group_by(Regimen, Decision) %>% 
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO"))) %>% 
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -381,11 +381,164 @@ p5 <- decisions_20 %>%
 ggpubr::ggarrange(p5, p3, p4, nrow = 1, common.legend = TRUE)
 ```
 
+```{r}
+p20 <- decisions_20_hl %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = "Regimen 0") %>% 
+  bind_rows(decisions_20) %>% 
+  group_by(Regimen, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete("Relative Slope, %",
+                   labels = c("-10%", "10%", "20%","30%","40%")) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 20$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+
+p30 <- decisions_hl %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = "Regimen 0") %>% 
+  bind_rows(decisions) %>% 
+  group_by(Regimen, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete("Relative Slope, %",
+                   labels = c("-10%", "10%", "20%","30%","40%")) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+
+p40 <- decisions_40_hl %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = "Regimen 0") %>% 
+  bind_rows(decisions_40) %>% 
+  group_by(Regimen, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  ggplot(aes(x = Regimen, y = Probability, fill = Decision)) + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete("Relative Slope, %",
+                   labels = c("-10%", "10%", "20%","30%","40%")) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 40$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+
+# ggpubr::ggarrange(p20, p30, p40, ncol = 1)
+p20
+p30
+p40
+```
+
+```{r barplot_sample-size-decisions, fig.width = 8, fig.height = 5}
+d30 <- decisions_hl %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = "Regimen 0") %>% 
+  bind_rows(decisions) %>% 
+  mutate(nk = 30)
+
+d20 <- decisions_20_hl %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = "Regimen 0") %>% 
+  bind_rows(decisions_20) %>% 
+  mutate(nk = 20)
+
+d40 <- decisions_40_hl %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = "Regimen 0") %>% 
+  bind_rows(decisions_40) %>% 
+  mutate(nk = 40)
+
+bind_rows(d20, d30, d40) %>% 
+  group_by(Regimen, Decision, nk) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, nk) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(Regimen.slope = case_when(Regimen == "Regimen 0" ~ "-10%", 
+                                   Regimen == "Regimen 1" ~ "10%", 
+                                   Regimen == "Regimen 2" ~ "20%",
+                                   Regimen == "Regimen 3" ~ "30%",
+                                   Regimen == "Regimen 4" ~ "40%")) %>% 
+  ggplot(aes(x = nk, y = Probability, fill = Decision)) + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  facet_wrap(~Regimen.slope, nrow = 1) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  xlab(TeX("$n_k")) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+library(kableExtra)
+
+bind_rows(d20, d30, d40) %>% 
+  group_by(Regimen, Decision, nk) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, nk) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(Regimen.slope = case_when(Regimen == "Regimen 0" ~ "-10%", 
+                                   Regimen == "Regimen 1" ~ "10%", 
+                                   Regimen == "Regimen 2" ~ "20%",
+                                   Regimen == "Regimen 3" ~ "30%",
+                                   Regimen == "Regimen 4" ~ "40%")) %>% 
+  ungroup() %>% 
+  dplyr::select(Slope = Regimen.slope, nk, Decision, Probability) %>% 
+  arrange(Slope, nk, Decision) %>% 
+  dplyr::select(-Slope) %>% 
+  kable() %>% 
+  kable_styling() %>% 
+  group_rows(group_label = "Slope: -10%", start_row = 1, end_row = 8) %>% 
+  group_rows(group_label = "Slope: 10%", start_row = 9, end_row = 17) %>% 
+  group_rows(group_label = "Slope: 20%", start_row = 18, end_row = 26) %>% 
+  group_rows(group_label = "Slope: 30%", start_row = 27, end_row = 34) %>% 
+  group_rows(group_label = "Slope: 40%", start_row = 35, end_row = 41) 
+```
+
+
 ### Varying LRV
 
 Fixing the TV at 20%.
 
-```{r barplot_decision-probabilities_even_varying-lrv, fig.width = 6, fig.height = 6}
+```{r barplot_decision-probabilities_even_varying-lrv, cache = TRUE, fig.width = 8, fig.height = 5}
 theta_lrv <- as.list(seq(0,15,by = 3))
 names(theta_lrv) <- theta_lrv
 theta_tv <- as.list(rep(20,length(theta_lrv)))
@@ -409,7 +562,7 @@ for (i in 1:length(theta_lrv)){
                   CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
         mutate(Decision = case_when(CI.975 < theta_tv[[i]] ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                     ((CI.025 > theta_lrv[[i]]) & (CI.975 > theta_tv[[i]])) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                    TRUE ~ "Consider")),
+                                    TRUE ~ "Continue")),
       .id = "sim") %>% 
     mutate(theta_tv = theta_tv[[i]],
            theta_lrv = theta_lrv[[i]])
@@ -417,22 +570,46 @@ for (i in 1:length(theta_lrv)){
   output <- bind_rows(output, temp)
 }
 
+output_neg10 <- NULL
+for (i in 1:length(theta_lrv)){
+  temp <- mcmc_mods_highlow_30 %>% 
+    map_dfr(
+      # Convert to % relative to control
+      ~transmute(.x, `Regimen 5` = ((arm2/arm1) - 1)*100) %>% 
+        pivot_longer(cols = 1,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv[[i]] ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv[[i]]) & (CI.975 > theta_tv[[i]])) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Continue")),
+      .id = "sim") %>% 
+    mutate(theta_tv = theta_tv[[i]],
+           theta_lrv = theta_lrv[[i]])
+  
+  output_neg10 <- bind_rows(output_neg10, temp)
+}
+
 
 output %>% 
+  bind_rows(output_neg10) %>% 
   group_by(Regimen, Decision, theta_lrv) %>% 
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen, theta_lrv) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO")),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO")),
          Regimen = case_when(Regimen == "Regimen 1" ~ "10% Slope Increase",
                              Regimen == "Regimen 2" ~ "20% Slope Increase",
                              Regimen == "Regimen 3" ~ "30% Slope Increase",
-                             TRUE ~ "40% Slope Increase")) %>% 
+                             Regimen == "Regimen 4" ~ "40% Slope Increase",
+                             TRUE ~ "-10% Slope Increase")) %>% 
   ggplot(aes(x = theta_lrv, y = Probability, fill = Decision)) + 
-  facet_wrap(~Regimen) +
+  facet_wrap(~Regimen, nrow = 1) +
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -445,14 +622,13 @@ output %>%
   ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{TV} = 20%$, $\\tau_{TV} = \\tau_{LRV} = 0.025$")) +
   theme(legend.position = "bottom")
 
-
 ```
 
 ### Varying TV
 
 Fixing the LRV at 0%.
 
-```{r barplot_decision-probabilities_even_varying-tv, fig.width = 6, fig.height = 6}
+```{r barplot_decision-probabilities_even_varying-tv, cache = TRUE, fig.width = 8, fig.height = 5}
 theta_tv <- as.list(seq(5,30,by=5))
 names(theta_tv) <- theta_tv
 theta_lrv <- as.list(rep(0,length(theta_tv)))
@@ -476,7 +652,7 @@ for (i in 1:length(theta_lrv)){
                   CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
         mutate(Decision = case_when(CI.975 < theta_tv[[i]] ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
                                     ((CI.025 > theta_lrv[[i]]) & (CI.975 > theta_tv[[i]])) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
-                                    TRUE ~ "Consider")),
+                                    TRUE ~ "Continue")),
       .id = "sim") %>% 
     mutate(theta_tv = theta_tv[[i]],
            theta_lrv = theta_lrv[[i]])
@@ -484,22 +660,46 @@ for (i in 1:length(theta_lrv)){
   output <- bind_rows(output, temp)
 }
 
+output_neg10 <- NULL
+for (i in 1:length(theta_lrv)){
+  temp <- mcmc_mods_highlow_30 %>% 
+    map_dfr(
+      # Convert to % relative to control
+      ~transmute(.x, `Regimen 5` = ((arm2/arm1) - 1)*100) %>% 
+        pivot_longer(cols = 1,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv[[i]] ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv[[i]]) & (CI.975 > theta_tv[[i]])) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Continue")),
+      .id = "sim") %>% 
+    mutate(theta_tv = theta_tv[[i]],
+           theta_lrv = theta_lrv[[i]])
+  
+  output_neg10 <- bind_rows(output_neg10, temp)
+}
+
 
 output %>% 
+  bind_rows(output_neg10) %>% 
   group_by(Regimen, Decision, theta_tv) %>% 
   summarise(n = n_distinct(sim)) %>% 
   group_by(Regimen, theta_tv) %>% 
   mutate(Probability = n/sum(n),
-         Decision = factor(Decision, levels = c("NO-GO", "Consider", "GO")),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO")),
          Regimen = case_when(Regimen == "Regimen 1" ~ "10% Slope Increase",
                              Regimen == "Regimen 2" ~ "20% Slope Increase",
                              Regimen == "Regimen 3" ~ "30% Slope Increase",
-                             TRUE ~ "40% Slope Increase")) %>% 
+                             Regimen == "Regimen 4" ~ "40% Slope Increase",
+                             TRUE ~ "-10% Slope Increase")) %>% 
   ggplot(aes(x = theta_tv, y = Probability, fill = Decision)) + 
-  facet_wrap(~Regimen) +
+  facet_wrap(~Regimen, nrow = 1) +
   scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Consider", "GO"),
-                    labels = c("NO-GO", "Consider", "GO")) +
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
   geom_bar(stat = "identity",
            alpha = 0.9) + 
   scale_y_continuous("Decision Probability",
@@ -514,3 +714,193 @@ output %>%
 
 
 ```
+
+### Varying false NO-GO risk
+
+Fixing $\theta_{LRV} = 0$%, $\theta_{TV} = 20$%, and $\tau_{LRV} = 2.5$%.
+
+```{r barplot_decision-probabilities_even_varying-tau-tv, cache = TRUE, fig.width = 8, fig.height = 5}
+tau_tv <- as.list(c(.025, .05, .10, .15, .20))
+names(tau_tv) <- tau_tv
+tau_lrv <- as.list(rep(0.025,length(tau_tv)))
+names(tau_lrv) <- tau_lrv
+
+theta_tv <- 20
+theta_lrv <- 0
+library(furrr)
+plan(multisession)
+
+output <- NULL
+for (i in 1:length(tau_lrv)){
+  temp <- mcmc_mods_even_30 %>% 
+    future_map_dfr(
+      # Convert to % relative to control
+      ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
+              `Regimen 2` = ((arm3/arm1) - 1)*100,
+              `Regimen 3` = ((arm4/arm1) - 1)*100,
+              `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
+        dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
+        pivot_longer(cols = 1:4,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv[[i]]),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv[[i]])) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Continue")),
+      .id = "sim") %>% 
+    mutate(tau_tv = tau_tv[[i]],
+           tau_lrv = tau_lrv[[i]])
+  
+  output <- bind_rows(output, temp)
+}
+
+output_neg10 <- NULL
+for (i in 1:length(tau_lrv)){
+  temp <- mcmc_mods_highlow_30 %>% 
+    future_map_dfr(
+      # Convert to % relative to control
+      ~transmute(.x, `Regimen 5` = ((arm2/arm1) - 1)*100) %>% 
+        pivot_longer(cols = 1,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv[[i]]),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv[[i]])) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Continue")),
+      .id = "sim") %>% 
+    mutate(tau_tv = tau_tv[[i]],
+           tau_lrv = tau_lrv[[i]])
+  
+  output_neg10 <- bind_rows(output_neg10, temp)
+}
+
+
+output %>% 
+  bind_rows(output_neg10) %>% 
+  group_by(Regimen, Decision, tau_tv) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, tau_tv) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO")),
+         Regimen = case_when(Regimen == "Regimen 1" ~ "10% Slope Increase",
+                             Regimen == "Regimen 2" ~ "20% Slope Increase",
+                             Regimen == "Regimen 3" ~ "30% Slope Increase",
+                             Regimen == "Regimen 4" ~ "40% Slope Increase",
+                             TRUE ~ "-10% Slope Increase")) %>% 
+  mutate(tau_tv = as.factor(tau_tv)) %>% 
+  ggplot(aes(x = tau_tv, y = Probability, fill = Decision)) + 
+  facet_wrap(~Regimen, nrow = 1) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete(TeX("$\\tau_{TV}$, %"),
+                  #   breaks = c(.025, .05, .10, .15, .20),
+                     labels = c(2.5, 5, 10, 15, 20)) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{LRV} = 0.025$")) +
+  theme(legend.position = "bottom")
+```
+
+### Varying false GO risk
+
+Fixing $\theta_{LRV} = 0$%, $\theta_{TV} = 20$%, and $\tau_{TV} = 2.5$%.
+
+```{r barplot_decision-probabilities_even_varying-tau-lrv, cache = TRUE, fig.width = 8, fig.height = 5}
+tau_lrv <- as.list(c(.025, .05, .10, .15, .20))
+names(tau_lrv) <- tau_lrv
+tau_tv <- as.list(rep(0.025,length(tau_lrv)))
+names(tau_tv) <- tau_tv
+
+theta_tv <- 20
+theta_lrv <- 0
+plan(multisession)
+
+output <- NULL
+for (i in 1:length(tau_lrv)){
+  temp <- mcmc_mods_even_30 %>% 
+    future_map_dfr(
+      # Convert to % relative to control
+      ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
+              `Regimen 2` = ((arm3/arm1) - 1)*100,
+              `Regimen 3` = ((arm4/arm1) - 1)*100,
+              `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
+        dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
+        pivot_longer(cols = 1:4,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv[[i]]),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv[[i]])) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Continue")),
+      .id = "sim") %>% 
+    mutate(tau_tv = tau_tv[[i]],
+           tau_lrv = tau_lrv[[i]])
+  
+  output <- bind_rows(output, temp)
+}
+
+output_neg10 <- NULL
+for (i in 1:length(tau_lrv)){
+  temp <- mcmc_mods_highlow_30 %>% 
+    future_map_dfr(
+      # Convert to % relative to control
+      ~transmute(.x, `Regimen 5` = ((arm2/arm1) - 1)*100) %>% 
+        pivot_longer(cols = 1,
+                     names_to = "Regimen",
+                     values_to = "Slope, %") %>% 
+        group_by(Regimen) %>% 
+        summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv[[i]]),
+                  CI.975 = quantile(`Slope, %`, probs = 1-tau_tv[[i]])) %>% 
+        mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                    ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                    TRUE ~ "Continue")),
+      .id = "sim") %>% 
+    mutate(tau_tv = tau_tv[[i]],
+           tau_lrv = tau_lrv[[i]])
+  
+  output_neg10 <- bind_rows(output_neg10, temp)
+}
+
+
+output %>% 
+  bind_rows(output_neg10) %>% 
+  group_by(Regimen, Decision, tau_lrv) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, tau_lrv) %>% 
+  mutate(Probability = n/sum(n),
+         Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO")),
+         Regimen = case_when(Regimen == "Regimen 1" ~ "10% Slope Increase",
+                             Regimen == "Regimen 2" ~ "20% Slope Increase",
+                             Regimen == "Regimen 3" ~ "30% Slope Increase",
+                             Regimen == "Regimen 4" ~ "40% Slope Increase",
+                             TRUE ~ "-10% Slope Increase")) %>% 
+  mutate(tau_tv = as.factor(tau_lrv)) %>% 
+  ggplot(aes(x = tau_tv, y = Probability, fill = Decision)) + 
+  facet_wrap(~Regimen, nrow = 1) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  geom_bar(stat = "identity",
+           alpha = 0.9) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_x_discrete(TeX("$\\tau_{LRV}$, %"),
+                  #   breaks = c(.025, .05, .10, .15, .20),
+                     labels = c(2.5, 5, 10, 15, 20)) + 
+  ggpubr::theme_pubr() + 
+  ggtitle(TeX("Results from 1000 simulations, $n_k = 30$"), subtitle = TeX("$\\theta_{LRV} = 0%$, $\\theta_{TV} = 20%$, $\\tau_{TV} = 0.025$")) +
+  theme(legend.position = "bottom")
+```
+
