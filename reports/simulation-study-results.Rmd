@@ -50,7 +50,7 @@ options(mc.cores = parallelly::availableCores())
 ```{r out.width="33%"}
 knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-mixed.jpg"))
 knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-all-desirable.jpg"))
-knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-all-minimal.jpg"))
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-04_survival-curve-all-minimal.jpg"))
 ```
 
 #### log10(TTP) conditions
