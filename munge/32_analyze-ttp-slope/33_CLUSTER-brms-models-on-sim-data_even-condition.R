@@ -1,7 +1,9 @@
 ##############################################
 # Run BRMS models on simulated data
 ##############################################
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(purrr)
 library(brms)
 library(parallelly)
 source("~/tb-seamless/lib/df_extract-mcmc-slopes-function.R")
@@ -26,23 +28,23 @@ nk_60 <- df_sims_s1[sims] %>%
 rm(df_sims_s1) # for space
 
 mods_even_60 <- map(nk_60,
-                    ~brm(yij_censored | cens(censored) ~ 1 + week + week:arm + (1 | patient.id),
+                    ~brm(model,
                          data = .x,
-                         prior = set_prior("uniform(-1,1)", lb = -1, ub = 1, class = "b")))
+                         prior = priors))
 
 # Save the model results
 summary_mods_even_60 <- map(mods_even_60,
                                ~summary(.x))
 save(summary_mods_even_60,
-     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_intercept-only_lod-25_nk-60_even-condition_modresults-", max(sims), ".RData"))
+     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_random-slope_lod-25_nk-60_even-condition_modresults-", max(sims), ".RData"))
 
 rm(summary_mods_even_60)
 
 # Save the MCMC chains
-mcmc_mods_even_60 <- map(mods_even_60,
+ mcmc_mods_even_60 <- map(mods_even_60,
                             ~mcmc_estimates_function(.x))
-save(mcmc_mods_even_60,
-     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_intercept-only_lod-25_nk-60_even-condition_mcmc-", max(sims), ".RData"))
+ save(mcmc_mods_even_60,
+     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_random-slope_lod-25_nk-60_even-condition_mcmc-", max(sims), ".RData"))
 
 rm(mods_even_60, mcmc_mods_even_60, nk_60)
 
@@ -60,16 +62,16 @@ nk_80 <- df_sims_s1[sims] %>%
   map(~mutate(.x, arm = as.factor(arm))) # make the arm a factor variable rather than integer
 
 rm(df_sims_s1)
-
 mods_even_80 <- map(nk_80,
-                    ~brm(yij_censored | cens(censored) ~ 1 + week + week:arm + (1 | patient.id),
+                    ~brm(model,
                          data = .x,
-                         prior = set_prior("uniform(-1,1)", lb = -1, ub = 1, class = "b")))
+                         prior = priors))
+
 # Save the model results
 summary_mods_even_80 <- map(mods_even_80,
                             ~summary(.x))
 save(summary_mods_even_80,
-     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_intercept-only_lod-25_nk-80_even-condition_modresults-", max(sims), ".RData"))
+     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_random-slope_lod-25_nk-80_even-condition_modresults-", max(sims), ".RData"))
 
 rm(summary_mods_even_80)
 
@@ -77,6 +79,6 @@ rm(summary_mods_even_80)
 mcmc_mods_even_80 <- map(mods_even_80,
                          ~mcmc_estimates_function(.x))
 save(mcmc_mods_even_80,
-     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_intercept-only_lod-25_nk-80_even-condition_mcmc-", max(sims), ".RData"))
+     file = paste0("~/tb-seamless/data/bayes-generated/", Sys.Date(), "_simulated-lmm_random-slope_lod-25_nk-80_even-condition_mcmc-", max(sims), ".RData"))
 
 rm(mods_even_80, mcmc_mods_even_80, nk_80)
