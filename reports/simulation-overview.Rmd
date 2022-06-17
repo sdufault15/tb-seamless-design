@@ -19,27 +19,101 @@ library(here)
 
 # Document Outline {.tabset}
 
-Borrowing significantly from Nick Paton's "UNITE4TB seamless trial design NP 25 Jan 2022"
+**The aim of this work is to identify stopping criteria and measures of risk for regimen selection at interim analyses.** Ideally, we aim to select those that prove sufficiently efficacious and drop those that are deemed unsafe or ineffective.
 
-Let $X$ denote the treatment arm where $X = 1$ is the control arm, and $X = 2,\ldots, K$ denotes distinct regimens being tested. Let $W$ denote the treatment duration (in months) with $W = w_1,\ldots, w_D$.
+## Data-Generating Mechanisms
 
-Assume a balanced design such that $N$ patients are randomized across the $K$ arms and $D$ durations. Therefore, for each arm and duration, there are $n_{k,d}$ patients. 
+We simulate the following:
 
-Let $Y$ be the continuous outcome of $\log_{10}(TTP)$. Let $y_{i,t}$ denote the outcome measured for individual $i$ at time $t$.
+1. Random enrollment date $\tau_{0i}$ for each participant $\tau_{0i} \in [0,T_{\tau}]$. This will affect who is included in interim and final analyses.
+    + Individuals will be concurrently randomized to regimens.
+    + Assume a random enrollment rate of 10 participants per week.
+2. log10(TTP) as a function of participant weeks since randomization ($t \in [0,8]$) and regimen.   
+3. Relapse as a function of regimen for $t \in (\text{duration of treatment}, 52]$.
+
+There are two distinct timelines that we will need to be aware of for simulating: 
+
+1. Trial time: $\tau = 0, \ldots, T_{\tau}$ weeks
+    + The interim and final analyses are scheduled according to trial time.
+    + Time of relapse occurrence with respect to trial time will be necessary for interim and final analyses.
+2. Patient time: $t = 0,\ldots T_t = 52$ weeks.
+    + For each patient, patient time starts at baseline and counts forward their weeks since randomization. Each patient is followed for a total of 52 weeks. Events after 52 weeks of patient follow-up are administratively censored.
+    + Patient time is particularly useful for the log10(TTP) analyses from the first *8* weeks of observation after randomization.
+    + Patient time is also useful for determining a patient's "at risk" status for relapse, since relapse can only occur once treatment is complete. 
+    
+### Overview
+
+| Outcome | Notation | Data-generating mechanism | Notes 
+|:-------:|:--------:|:-------------------------:|:-----|
+| Relapse/failure | $Y_1$ | $\text{Weibull}(\lambda,p)$ | $S(52) = 0.97, 0.95, 0.93$, $p = 0.425$ |
+| $\log_{10}$TTP | $Y_2$ | $\text{Normal}(\mu, \sigma)$ | |
+
+### Outcome
+
+#### Primary outcome: Relapse/treatment failure
+
+The primary outcome is relapse or treatment failure, $Y_1$. However, (depending on enrollment rate and sample size) very little relapse data is likely to have been collected by the time of the first or second interim analysis.
+
+\begin{align}
+Y_1 = \cases{1 & relapse, treatment failure \\
+0 & favorable outcome}
+\end{align}
+
+To simulate censored survival data, we must specify two survival distributions:
+
+1. Uncensored survival times observed under no censoring
+2. Censoring mechanism
+    + For now, we will assume there is no loss to follow-up. Therefore, the only non-informative censoring that occurs is administrative end of follow-up.
+
+Each patient enters the risk set for adverse survival outcomes *after* they have completed treatment. **We are assuming all individuals finish treatment.** Each individual is followed for 52 weeks post-randomization. Therefore, their maximum survival follow-up time is: 52 weeks - duration of intervention (weeks).
+
+We use a two-parameter Weibull model to simulate $Y_{1} | \lambda, p$. We fix $p$ such that 75\% of events occur within 3 months (13 weeks). Further, we set the expected survival rate at 26 weeks post-treatment (i.e., corresponding to 52 weeks post-randomization) and then back solve for $\lambda$. 
+
+We'll consider the following:
+
++ $S(52) = \{0.97, 0.95, 0.90\}$
+
+We parameterize $\lambda$ such that it depends on regimen assigment.
+
+\[\log[h(t|X)] = \log(p t^{p-1}) + \beta_0 + \beta_1 \times \mathbb{I}(X = 2) + \cdots + \beta_{K-1} \times \mathbb{I}(X = K)\]
+
+where:
+
++ $\log(p t^{p-1}) + \beta_0$ is the log-hazard over time in the control regimen with a 26-week duration
+  + $\beta_0 = \log\lambda$ is found by solving $S(t) = e^{-\lambda t^p}$. 
+  + $p$ is the corresponding $p = 0.425$ (such that 75% of events occur within first 13 weeks.)
++ $\beta_k, k = 2,...,K-1$ is the change in log-hazard for "novel" regimen $k$ compared to the control 
+  + Note: control is always a 6-month regimen
+
+#### Secondary outcome: Time to positivity
+
+We will rely instead on biomarkers for the majority of decision-making, though relapse will play a role in setting expected thresholds for regimen futility/lack of safety.
+
+The first biomarker we will rely on is the relative change in time to positivity $Y_2$ as compared to the control (standard of care). The underlying assumption is that regimens that show vastly improved time to positivity may be promising candidates for an effective TB therapeutic with potential for a shorter duration.
+
+### Exposure
+
+The exposure of interest is the regimen. **We have not specified any useful covariates at this point.**
+
+Let $X$ denote the treatment arm where:
+\begin{align}
+X = \cases{1 & control arm \\
+2 & novel regimen 1 \\
+3 & novel regimen 2 \\
+\vdots & $\vdots$\\
+K & novel regimen $K - 1$}
+\end{align}
+
+As such, there are $K$ total regimens, with $K = 1$ indicating the control regimen.
+
+
+Assume a balanced design such that $N$ patients are randomized across the $K$ arms. Therefore, for each arm, there are $n_{k}$ patients. 
+
+Let $Y_1$ be the continuous outcome of $\log_{10}(TTP)$. and $Y_2$ be the binary outcome denoting relapse or treatment failure. Let $y_{i,t}$ denote the outcome measured for individual $i$ at time $t$.
 
 We'll use a Normal-Normal Bayesian model framework:
 
 \[\text{TO BE ADDED}\]
-
-**The aim of this trial is to, over a range of $K$ new treatments and $D$ durations, select those that prove sufficiently efficacious (?) and drop those that are unexpectedly ineffective.**
-
-Stopping criteria:
-
-\[\text{TO BE ADDED}\]
-
-
-
-## Notation
 
 Notation:
 
