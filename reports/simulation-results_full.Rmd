@@ -1,0 +1,427 @@
+---
+title: "Random Intercept, Random Slope"
+author: "Suzanne Dufault"
+date: "6/16/2022"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.path = "../graphs/simulation-results/random-intercept-random-slope/")
+
+library(tidyverse)
+library(here)
+library(kableExtra)
+library(latex2exp)
+source(here("lib", "ucsf-color-palette.R"))
+```
+
+# Output
+
+## Relapse
+
+```{r relapse-data}
+# Situation 1, S(52) = .95
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk30_4mo-duration.RData"))
+s95.sit1.30 <- s95.situation1.results
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk40_4mo-duration.RData"))
+s95.sit1.40 <- s95.situation1.results
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk60_4mo-duration.RData"))
+s95.sit1.60 <- s95.situation1.results
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk80_4mo-duration.RData"))
+s95.sit1.80 <- s95.situation1.results
+```
+
+```{r fig-relapse-data, fig.width = 7, fig.height = 9}
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
+            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
+            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
+               names_to = "threshold",
+               values_to = "prop_stopped") %>% 
+  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
+  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Relapse Rate",
+                          regimen == 4 ~ "Minimal: 5% Relapse Rate",
+                          regimen == 5 ~ "Desirable: 2.5% Relapse Rate"),
+         threshold = str_remove(threshold, "prop_stopped_")) %>% 
+  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Relapse Rate","Minimal: 5% Relapse Rate","Desirable: 2.5% Relapse Rate"))) %>% 
+  ggplot(aes(x = prop_stopped,
+             y = nk, 
+             # shape = threshold, 
+             col = threshold)) + 
+  facet_wrap(~rate, ncol = 1) + 
+  scale_x_continuous(TeX("Pr(No. relapses $\\geq$ threshold)"),
+                     breaks = seq(0,1,by = 0.2),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_y_continuous(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) +
+  scale_linetype_discrete("Relapse threshold") +
+  scale_color_manual("Relapse threshold", values = ucsf_col_pal) + 
+  geom_line(aes(lty = threshold),
+            size = 1) +
+  ggpubr::theme_pubr()
+
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
+            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
+            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
+               names_to = "threshold",
+               values_to = "prop_stopped") %>% 
+  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
+  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Relapse Rate",
+                          regimen == 4 ~ "Minimal: 5% Relapse Rate",
+                          regimen == 5 ~ "Desirable: 2.5% Relapse Rate"),
+         threshold = str_remove(threshold, "prop_stopped_")) %>% 
+  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Relapse Rate","Minimal: 5% Relapse Rate","Desirable: 2.5% Relapse Rate"))) %>% 
+  ggplot(aes(x = prop_stopped,
+             y = nk, 
+             # shape = threshold, 
+             col = threshold)) + 
+  facet_wrap(~rate, ncol = 1) + 
+  scale_x_continuous(TeX("Pr(No. relapses $\\geq$ threshold)"),
+                     breaks = seq(0,1,by = 0.2),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_y_continuous(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) +
+  scale_linetype_discrete("Relapse threshold") +
+  scale_color_manual("Relapse threshold", values = ucsf_col_pal) + 
+  geom_point() + 
+  # geom_line(aes(lty = threshold),
+  #           size = 1) +
+  ggpubr::theme_pubr()
+
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
+            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
+            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
+               names_to = "threshold",
+               values_to = "prop_stopped") %>% 
+  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
+  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Relapse Rate",
+                          regimen == 4 ~ "Minimal: 5% Relapse Rate",
+                          regimen == 5 ~ "Desirable: 2.5% Relapse Rate"),
+         threshold = str_remove(threshold, "prop_stopped_")) %>% 
+  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Relapse Rate","Minimal: 5% Relapse Rate","Desirable: 2.5% Relapse Rate"))) %>% 
+  ggplot(aes(x = as.factor(nk),
+             y = threshold, 
+             # shape = threshold, 
+             fill = prop_stopped)) + 
+  facet_wrap(~rate, ncol = 1) + 
+  geom_tile() + 
+  geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
+            col = "white") +
+  ggpubr::theme_pubr() + 
+  scale_y_discrete("Relapse threshold") +
+  scale_x_discrete(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) + 
+  scale_fill_viridis_c(TeX("Pr(No. observed relapses $\\geq$ threshold)")) + 
+  theme(legend.position = "bottom")
+```
+
+## TTP 
+
+```{r}
+# Data
+
+# Even
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-20_even.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-30_even.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-40_even.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-60_even.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-80_even.RData"))
+
+# High
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-20_high.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-30_high.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-40_high.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-60_high.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-80_high.RData"))
+
+# High-Low
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-20_highlow.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-30_highlow.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-40_highlow.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-60_highlow.RData"))
+load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-80_highlow.RData"))
+```
+
+```{r data-wrangling}
+mcmc_even <- list(nk20 = mcmc_mods_even_20,
+                  nk30 = mcmc_mods_even_30,
+                  nk40 = mcmc_mods_even_40,
+                  nk60 = mcmc_mods_even_60,
+                  nk80 = mcmc_mods_even_80)
+
+mcmc_high <- list(nk20 = mcmc_mods_high_20,
+                  nk30 = mcmc_mods_high_30,
+                  nk40 = mcmc_mods_high_40,
+                  nk60 = mcmc_mods_high_60,
+                  nk80 = mcmc_mods_high_80)
+
+mcmc_highlow <- list(nk20 = mcmc_mods_highlow_20,
+                     nk30 = mcmc_mods_highlow_30,
+                     nk40 = mcmc_mods_highlow_40,
+                     nk60 = mcmc_mods_highlow_60,
+                     nk80 = mcmc_mods_highlow_80)
+```
+
+```{r ranking, eval = FALSE,  cache = TRUE}
+# Function to evaluate MCMC rank
+mcmc_rank_function <- function(mcmc_df){
+  rnks <- apply(mcmc_df, 1, rank)
+  
+  output <- data.frame(p.subset.1 = apply(rnks,1, function(x){sum(x>=4)}), # best
+                       p.subset.2 = apply(rnks,1, function(x){sum(x>=3)}), # top 2
+                       p.subset.3 = apply(rnks,1, function(x){sum(x>=2)}),
+                       p.subset.4 = apply(rnks,1, function(x){sum(x>=1)}),
+                       nsims = apply(rnks,1,length)) %>% 
+    mutate(p.subset.1 = p.subset.1/nsims,
+           p.subset.2 = p.subset.2/nsims,
+           p.subset.3 = p.subset.3/nsims,
+           p.subset.4 = p.subset.4/nsims) %>% 
+    rownames_to_column(var = "regimen")
+  
+  return(output)
+}
+
+library(furrr)
+plan(multisession)
+ranking_output_even <- future_map(mcmc_even, # mcmc_even has 5 slots (one per sample size)
+                                  ~map(.x, # within each sample size, there are 1,000 simulated mcmc chains 
+                                       ~mcmc_rank_function(.x)),
+                                  .id = "nk")
+
+ranking_output_high <- future_map(mcmc_high, 
+                                  ~map(.x, 
+                                       ~mcmc_rank_function(.x)),
+                                  .id = "nk")
+
+ranking_output_highlow <- future_map(mcmc_highlow, 
+                                     ~map(.x, 
+                                          ~mcmc_rank_function(.x)),
+                                     .id = "nk")
+beepr::beep()
+```
+
+## Figure 3
+
+```{r}
+bind_rows(
+  mutate(map_dfr(ranking_output_even$nk20,
+          ~.x), nk = 20),
+  mutate(map_dfr(ranking_output_even$nk30,
+          ~.x), nk = 30), 
+  mutate(map_dfr(ranking_output_even$nk40,
+          ~.x), nk = 40),
+  mutate(map_dfr(ranking_output_even$nk60,
+          ~.x), nk = 60),
+  mutate(map_dfr(ranking_output_even$nk80,
+          ~.x), nk = 80)) %>%
+  filter(regimen != "arm1") %>% 
+  mutate(regimen.perc = case_when(regimen == "arm2" ~ "10%",
+                                  regimen == "arm3" ~ "20%",
+                                  regimen == "arm4" ~ "30%",
+                                  regimen == "arm5" ~ "40%"),
+         nk = as.factor(nk)) %>% 
+  ggplot(aes(x = nk, y = p.subset.1)) +
+  facet_wrap(~regimen.perc) +
+  geom_violin(col = ucsf_col_pal[1],
+              fill = ucsf_col_pal[1],
+              width = 1,
+              alpha = 0.3) +
+  # geom_point(alpha = 0.1,
+  #            position = position_jitter(width = 0.3, height = 0),
+  #            col = ucsf_col_pal[1]) + 
+  geom_boxplot(width = 0.1,
+               outlier.shape = NA,
+               fill = "white") +
+  ylab(TeX("Pr$_{\\theta}(\\theta_{k} = \\theta_{(1)}$)")) + 
+  xlab(TeX("Sample size per regimen, $n_k$")) + 
+  ggpubr::theme_pubr()
+
+even_full <- bind_rows(
+  mutate(map_dfr(ranking_output_even$nk20,
+                 ~.x,
+                 .id = "sim"), nk = 20),
+  mutate(map_dfr(ranking_output_even$nk30,
+                 ~.x,.id = "sim"), nk = 30), 
+  mutate(map_dfr(ranking_output_even$nk40,
+                 ~.x,.id = "sim"), nk = 40),
+  mutate(map_dfr(ranking_output_even$nk60,
+                 ~.x,.id = "sim"), nk = 60),
+  mutate(map_dfr(ranking_output_even$nk80,
+                 ~.x,.id = "sim"), nk = 80)) 
+
+high_full <- bind_rows(
+  mutate(map_dfr(ranking_output_high$nk20,
+                 ~.x,
+                 .id = "sim"), nk = 20),
+  mutate(map_dfr(ranking_output_high$nk30,
+                 ~.x,.id = "sim"), nk = 30), 
+  mutate(map_dfr(ranking_output_high$nk40,
+                 ~.x,.id = "sim"), nk = 40),
+  mutate(map_dfr(ranking_output_high$nk60,
+                 ~.x,.id = "sim"), nk = 60),
+  mutate(map_dfr(ranking_output_high$nk80,
+                 ~.x,.id = "sim"), nk = 80)) 
+
+highlow_full <- bind_rows(
+  mutate(map_dfr(ranking_output_highlow$nk20,
+                 ~.x,
+                 .id = "sim"), nk = 20),
+  mutate(map_dfr(ranking_output_highlow$nk30,
+                 ~.x,.id = "sim"), nk = 30), 
+  mutate(map_dfr(ranking_output_highlow$nk40,
+                 ~.x,.id = "sim"), nk = 40),
+  mutate(map_dfr(ranking_output_highlow$nk60,
+                 ~.x,.id = "sim"), nk = 60),
+  mutate(map_dfr(ranking_output_highlow$nk80,
+                 ~.x,.id = "sim"), nk = 80)) 
+
+p1 <- even_full %>% 
+  filter(regimen %in% c("arm4", "arm5")) %>%  # Take the two true best arms
+  dplyr::select(sim, regimen, p.subset.1, nk) %>% 
+  pivot_wider(values_from = p.subset.1,
+              names_from = regimen) %>% 
+  mutate(p.diff = arm5 - arm4) %>% 
+  ggplot(aes(x = as.factor(nk), y = p.diff)) + 
+  geom_point(position = position_jitter(height = 0, width = 0.45),
+             alpha = 0.1,
+             aes(col = p.diff > 0)) + 
+  scale_color_manual(values = ucsf_col_pal[3:4]) +
+  geom_hline(yintercept = 0, 
+             col= ucsf_col_pal[3],
+             size = 1) + 
+  geom_violin(width = 1) +
+  geom_boxplot(width = 0.05,
+               outlier.shape = NA,
+               fill = "darkgray",
+               alpha = 0.5) +
+  ggpubr::theme_pubr() +
+  coord_cartesian(xlim = c(0,5)) + 
+  ylab(TeX("Pr$_{\\theta}(\\theta_5 = \\theta_{(1)}) -$ Pr$_{\\theta}(\\theta_4 = \\theta_{(1)})$")) + 
+  xlab(TeX("Sample size per regimen, $n_k$")) + 
+  annotate(geom = "text",
+           x = -0.35, y = 0,
+           col = ucsf_col_pal[4],
+           hjust = 0,
+           vjust = -0.5,
+           label = "Favors true\nbest regimen") +
+  annotate(geom = "text",
+           x = -0.35, y = 0,
+           col = ucsf_col_pal[3],
+           hjust = 0,
+           vjust = 1.5,
+           label = "Favors second\nbest regimen") + 
+  theme(legend.position = "none")
+
+p2 <- high_full %>% 
+  filter(regimen %in% c("arm4", "arm5")) %>%  # Take the two true best arms
+  dplyr::select(sim, regimen, p.subset.1, nk) %>% 
+  pivot_wider(values_from = p.subset.1,
+              names_from = regimen) %>% 
+  mutate(p.diff = arm5 - arm4) %>% 
+  ggplot(aes(x = as.factor(nk), y = p.diff)) + 
+  geom_point(position = position_jitter(height = 0, width = 0.45),
+             alpha = 0.1,
+             aes(col = p.diff > 0)) + 
+  scale_color_manual(values = ucsf_col_pal[3:4]) +
+  geom_hline(yintercept = 0, 
+             col= ucsf_col_pal[3],
+             size = 1) + 
+  geom_violin(width = 1) +
+  geom_boxplot(width = 0.05,
+               outlier.shape = NA,
+               fill = "darkgray",
+               alpha = 0.5) +
+  ggpubr::theme_pubr() +
+  coord_cartesian(xlim = c(0,5)) + 
+  ylab(TeX("Pr$_{\\theta}(\\theta_5 = \\theta_{(1)}) -$ Pr$_{\\theta}(\\theta_4 = \\theta_{(1)})$")) + 
+  xlab(TeX("Sample size per regimen, $n_k$")) + 
+  annotate(geom = "text",
+           x = -0.35, y = 0,
+           col = ucsf_col_pal[4],
+           hjust = 0,
+           vjust = -0.5,
+           label = "Favors true\nbest regimen") +
+  annotate(geom = "text",
+           x = -0.35, y = 0,
+           col = ucsf_col_pal[3],
+           hjust = 0,
+           vjust = 1.5,
+           label = "Favors second\nbest regimen") + 
+  theme(legend.position = "none")
+  
+p3 <- highlow_full %>% 
+  filter(regimen %in% c("arm4", "arm5")) %>%  # Take the two true best arms
+  dplyr::select(sim, regimen, p.subset.1, nk) %>% 
+  pivot_wider(values_from = p.subset.1,
+              names_from = regimen) %>% 
+  mutate(p.diff = arm5 - arm4) %>% 
+  ggplot(aes(x = as.factor(nk), y = p.diff)) + 
+  geom_point(position = position_jitter(height = 0, width = 0.45),
+             alpha = 0.1,
+             aes(col = p.diff > 0)) + 
+  scale_color_manual(values = ucsf_col_pal[3:4]) +
+  geom_hline(yintercept = 0, 
+             col= ucsf_col_pal[3],
+             size = 1) + 
+  geom_violin(width = 1) +
+  geom_boxplot(width = 0.05,
+               outlier.shape = NA,
+               fill = "darkgray",
+               alpha = 0.5) +
+  ggpubr::theme_pubr() +
+  coord_cartesian(xlim = c(0,5)) + 
+  ylab(TeX("Pr$_{\\theta}(\\theta_5 = \\theta_{(1)}) -$ Pr$_{\\theta}(\\theta_4 = \\theta_{(1)})$")) + 
+  xlab(TeX("Sample size per regimen, $n_k$")) + 
+  annotate(geom = "text",
+           x = -0.35, y = 0,
+           col = ucsf_col_pal[4],
+           hjust = 0,
+           vjust = -0.5,
+           label = "Favors true\nbest regimen") +
+  annotate(geom = "text",
+           x = -0.35, y = 0,
+           col = ucsf_col_pal[3],
+           hjust = 0,
+           vjust = 1.5,
+           label = "Favors second\nbest regimen") + 
+  theme(legend.position = "none")
+
+
+ggpubr::ggarrange(p1, p3, p2, ncol = 1,
+                  labels = "AUTO")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
+                       paste0(Sys.Date(), "_violin-box-point_posterior-comparison_best-v-second-best.png")),
+       height = 10,
+       width = 8,
+       units = "in",
+       device = "png"
+)
+```
