@@ -1,11 +1,8 @@
 ---
 title: "Random Intercept, Random Slope"
 author: "Suzanne Dufault"
-date: "6/16/2022"
-output: 
-  html_document:
-    toc: true
-    toc_float: true
+date: "`r Sys.Date()`"
+output: html_document
 editor_options: 
   chunk_output_type: console
 ---
@@ -17,15 +14,17 @@ knitr::opts_chunk$set(echo = FALSE,
                       fig.path = "../graphs/simulation-results/random-intercept-random-slope/")
 
 library(tidyverse)
+library(patchwork)
 library(here)
 library(kableExtra)
 library(latex2exp)
+library(furrr)
 source(here("lib", "ucsf-color-palette.R"))
 ```
 
-# Output
+# Output {.tabset}
 
-## Relapse
+## Relapse 
 
 ```{r relapse-data}
 # Situation 1, S(52) = .95
@@ -140,31 +139,31 @@ bind_rows(mutate(s95.sit1.30, nk = 30),
   theme(legend.position = "bottom")
 ```
 
-## TTP 
+## TTP {.tabset .tabset-pills}
 
 ```{r}
 # Data
 
 # Even
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-20_even.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-30_even.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-40_even.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-60_even.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-80_even.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_even.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-40_even.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-60_even.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_even.RData"))
 
 # High
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-20_high.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-30_high.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-40_high.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-60_high.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-80_high.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_high.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_high.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-40_high.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-60_high.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_high.RData"))
 
 # High-Low
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-20_highlow.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-30_highlow.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-40_highlow.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-60_highlow.RData"))
-load(here("data","cleaned","2022-06-20_mcmc_random-intercept-random-slope_nk-80_highlow.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_highlow.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_highlow.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-40_highlow.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-60_highlow.RData"))
+load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_highlow.RData"))
 ```
 
 ```{r data-wrangling}
@@ -187,15 +186,235 @@ mcmc_highlow <- list(nk20 = mcmc_mods_highlow_20,
                      nk80 = mcmc_mods_highlow_80)
 ```
 
-```{r ranking, eval = FALSE,  cache = TRUE}
+### Target Product Profile Decisions
+
+```{r}
+theta_lrv <- 0
+theta_tv <- .2
+tau_lrv <- 0.025
+tau_tv <- 0.025
+```
+
+```{r tpp-decision-function, cache = TRUE}
+decision_function <- function(mcmc_list, nk, theta_lrv, theta_tv, tau_lrv, tau_tv){
+  out <- map_dfr(mcmc_list,  
+                 # Convert to % relative to control
+                 ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
+                         `Regimen 2` = ((arm3/arm1) - 1)*100,
+                         `Regimen 3` = ((arm4/arm1) - 1)*100,
+                         `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
+                   dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
+                   pivot_longer(cols = 1:4,
+                                names_to = "Regimen",
+                                values_to = "Slope, %") %>% 
+                   group_by(Regimen) %>% 
+                   summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
+                             CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
+                   mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
+                                               ((CI.025 > theta_lrv) & (CI.975 > theta_tv)) ~ "GO", # if the CI includes TV and is entirely above the LRV, then it goes
+                                               TRUE ~ "Continue")),
+                 .id = "sim") %>% 
+    mutate(nk = nk)
+  return(out)
+}
+
+library(furrr)
+plan(multisession)
+nk <- as.list(c(20,30,40,60,80))
+names(nk) <- nk
+decisions <- future_map2_dfr(mcmc_even, nk, ~decision_function(.x,
+                                                               nk = .y,
+                                                               theta_lrv = 0, # in %
+                                                               theta_tv = 20, # in % 
+                                                               tau_lrv = 0.025, 
+                                                               tau_tv = 0.025))
+
+decisions_highlow <- future_map2_dfr(mcmc_highlow, nk, ~decision_function(.x,
+                                                                          nk = .y,
+                                                                          theta_lrv = 0, # in %
+                                                                          theta_tv = 20, # in % 
+                                                                          tau_lrv = 0.025, 
+                                                                          tau_tv = 0.025))
+```
+
+```{r barplot-tpp-decisions, fig.width = 10, fig.height = 6}
+d_hl <- decisions_highlow %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "-10%"))
+d_full <- decisions %>% 
+  mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "10%",
+                             Regimen == "Regimen 2" ~ "20%",
+                             Regimen == "Regimen 3" ~ "30%",
+                             Regimen == "Regimen 4" ~ "40%")) %>% 
+  bind_rows(d_hl) %>%
+  mutate(Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO")),
+         nk = factor(nk)) %>% 
+  group_by(Regimen, nk, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, nk) %>% 
+  summarise(Probability = n/sum(n),
+            Decision = Decision) 
+
+d_full %>% 
+  ungroup() %>% 
+  pivot_wider(values_from = Probability,
+              names_from = Decision) %>% 
+  dplyr::select(-Regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  group_rows("Slope, %: -10%", start_row = 1, end_row = 5) %>% 
+  group_rows("Slope, %: 10%", start_row = 6, end_row = 10) %>%
+  group_rows("Slope, %: 20%", start_row = 11, end_row = 15) %>% 
+  group_rows("Slope, %: 30%", start_row = 16, end_row = 20) %>% 
+  group_rows("Slope, %: 40%", start_row = 21, end_row = 25)
+
+d_full %>% 
+  ggplot(aes(x = nk, y = Probability, fill = Decision)) + 
+  geom_bar(stat = "identity") + 
+  facet_wrap(~Regimen, nrow = 1) +
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom")
+```
+
+```{r}
+plan(multisession)
+nk <- as.list(c(20,30,40,60,80))
+names(nk) <- nk
+decisions_2 <- future_map2_dfr(mcmc_even, nk, ~decision_function(.x,
+                                                               nk = .y,
+                                                               theta_lrv = 0, # in %
+                                                               theta_tv = 20, # in % 
+                                                               tau_lrv = 0.05, 
+                                                               tau_tv = 0.05))
+
+decisions_highlow_2 <- future_map2_dfr(mcmc_highlow, nk, ~decision_function(.x,
+                                                                          nk = .y,
+                                                                          theta_lrv = 0, # in %
+                                                                          theta_tv = 20, # in % 
+                                                                          tau_lrv = 0.05, 
+                                                                          tau_tv = 0.05))
+```
+
+```{r}
+d_hl_2 <- decisions_highlow_2 %>% 
+  filter(Regimen == "Regimen 1") %>% 
+  mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "-10%"))
+d_full_2 <- decisions_2 %>% 
+  mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "10%",
+                             Regimen == "Regimen 2" ~ "20%",
+                             Regimen == "Regimen 3" ~ "30%",
+                             Regimen == "Regimen 4" ~ "40%")) %>% 
+  bind_rows(d_hl) %>%
+  mutate(Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO")),
+         nk = factor(nk)) %>% 
+  group_by(Regimen, nk, Decision) %>% 
+  summarise(n = n_distinct(sim)) %>% 
+  group_by(Regimen, nk) %>% 
+  summarise(Probability = n/sum(n),
+            Decision = Decision) 
+
+d_full_2 %>% 
+  ungroup() %>% 
+  pivot_wider(values_from = Probability,
+              names_from = Decision) %>% 
+  dplyr::select(-Regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  group_rows("Slope, %: -10%", start_row = 1, end_row = 5) %>% 
+  group_rows("Slope, %: 10%", start_row = 6, end_row = 10) %>%
+  group_rows("Slope, %: 20%", start_row = 11, end_row = 15) %>% 
+  group_rows("Slope, %: 30%", start_row = 16, end_row = 20) %>% 
+  group_rows("Slope, %: 40%", start_row = 21, end_row = 25)
+```
+
+```{r}
+tau_tv <- 0.025
+tau_lrv <- list(0.025, 0.05, 0.1, 0.15, 0.2)
+names(tau_lrv) <- tau_lrv
+
+d30 <- future_map2_dfr(tau_lrv, mcmc_even[2], 
+                       ~decision_function(mcmc_list = .y, 
+                                          nk = 30,
+                                          theta_lrv = 0,
+                                          theta_tv = 20,
+                                          tau_lrv = .x,
+                                          tau_tv = tau_tv),
+                       .id = "tau_lrv") 
+
+d30 %>% 
+  group_by(tau_lrv, Regimen, Decision) %>% 
+  summarise(n = n()) %>% 
+  group_by(tau_lrv, Regimen) %>% 
+  summarise(prop = n/sum(n),
+            Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "10%",
+                             Regimen == "Regimen 2" ~ "20%",
+                             Regimen == "Regimen 3" ~ "30%",
+                             Regimen == "Regimen 4" ~ "40%")) %>% 
+  ggplot(aes(x = tau_lrv, y = prop, fill = Decision)) + 
+  facet_wrap(~Regimen) +
+  geom_bar(stat="identity") + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  ggpubr::theme_pubr() + 
+  xlab(TeX("$\\tau_{LRV}")) +
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  theme(legend.position = "bottom")
+
+d30_tv <- future_map2_dfr(tau_lrv, mcmc_highlow[2], 
+                          ~decision_function(mcmc_list = .y, 
+                                             nk = 30,
+                                             theta_lrv = 0,
+                                             theta_tv = 20,
+                                             tau_lrv = 0.025,
+                                             tau_tv = .x),
+                          .id = "tau_tv") 
+
+d30_tv %>% 
+  group_by(tau_tv, Regimen, Decision) %>% 
+  summarise(n = n()) %>% 
+  group_by(tau_tv, Regimen) %>% 
+  summarise(prop = n/sum(n),
+            Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "-10%",
+                             Regimen == "Regimen 2" ~ "10%",
+                             Regimen == "Regimen 3" ~ "35%",
+                             Regimen == "Regimen 4" ~ "40%")) %>% 
+  ggplot(aes(x = tau_tv, y = prop, fill = Decision)) + 
+  facet_wrap(~Regimen) +
+  geom_bar(stat="identity") + 
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  ggpubr::theme_pubr() + 
+  xlab(TeX("$\\tau_{TV}")) +
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  theme(legend.position = "bottom")
+```
+
+### Ranking 
+
+
+```{r ranking, eval = TRUE, cache = TRUE}
 # Function to evaluate MCMC rank
 mcmc_rank_function <- function(mcmc_df){
   rnks <- apply(mcmc_df, 1, rank)
   
-  output <- data.frame(p.subset.1 = apply(rnks,1, function(x){sum(x>=4)}), # best
-                       p.subset.2 = apply(rnks,1, function(x){sum(x>=3)}), # top 2
-                       p.subset.3 = apply(rnks,1, function(x){sum(x>=2)}),
-                       p.subset.4 = apply(rnks,1, function(x){sum(x>=1)}),
+  output <- data.frame(p.subset.1 = apply(rnks,1, function(x){sum(x>4)}), # best
+                       p.subset.2 = apply(rnks,1, function(x){sum(x>3)}), # top 2
+                       p.subset.3 = apply(rnks,1, function(x){sum(x>2)}),
+                       p.subset.4 = apply(rnks,1, function(x){sum(x>1)}),
                        nsims = apply(rnks,1,length)) %>% 
     mutate(p.subset.1 = p.subset.1/nsims,
            p.subset.2 = p.subset.2/nsims,
@@ -225,20 +444,20 @@ ranking_output_highlow <- future_map(mcmc_highlow,
 beepr::beep()
 ```
 
-## Figure 3
+#### Comparing estimated confidence in top 2 regimens
 
 ```{r}
 bind_rows(
   mutate(map_dfr(ranking_output_even$nk20,
-          ~.x), nk = 20),
+                 ~.x), nk = 20),
   mutate(map_dfr(ranking_output_even$nk30,
-          ~.x), nk = 30), 
+                 ~.x), nk = 30), 
   mutate(map_dfr(ranking_output_even$nk40,
-          ~.x), nk = 40),
+                 ~.x), nk = 40),
   mutate(map_dfr(ranking_output_even$nk60,
-          ~.x), nk = 60),
+                 ~.x), nk = 60),
   mutate(map_dfr(ranking_output_even$nk80,
-          ~.x), nk = 80)) %>%
+                 ~.x), nk = 80)) %>%
   filter(regimen != "arm1") %>% 
   mutate(regimen.perc = case_when(regimen == "arm2" ~ "10%",
                                   regimen == "arm3" ~ "20%",
@@ -314,14 +533,15 @@ p1 <- even_full %>%
   geom_hline(yintercept = 0, 
              col= ucsf_col_pal[3],
              size = 1) + 
-  geom_violin(width = 1) +
+  geom_violin(width = 1,
+              alpha = 0.6) +
   geom_boxplot(width = 0.05,
                outlier.shape = NA,
                fill = "darkgray",
                alpha = 0.5) +
   ggpubr::theme_pubr() +
   coord_cartesian(xlim = c(0,5)) + 
-  ylab(TeX("Pr$_{\\theta}(\\theta_5 = \\theta_{(1)}) -$ Pr$_{\\theta}(\\theta_4 = \\theta_{(1)})$")) + 
+  ylab(TeX("$\\widehat{\\psi}_{2,(1)} - \\widehat{\\psi}_{2,(2)}$")) + 
   xlab(TeX("Sample size per regimen, $n_k$")) + 
   annotate(geom = "text",
            x = -0.35, y = 0,
@@ -335,7 +555,8 @@ p1 <- even_full %>%
            hjust = 0,
            vjust = 1.5,
            label = "Favors second\nbest regimen") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        axis.title.x = element_blank())
 
 p2 <- high_full %>% 
   filter(regimen %in% c("arm4", "arm5")) %>%  # Take the two true best arms
@@ -351,14 +572,15 @@ p2 <- high_full %>%
   geom_hline(yintercept = 0, 
              col= ucsf_col_pal[3],
              size = 1) + 
-  geom_violin(width = 1) +
+  geom_violin(width = 1,
+              alpha = 0.6) +
   geom_boxplot(width = 0.05,
                outlier.shape = NA,
                fill = "darkgray",
                alpha = 0.5) +
   ggpubr::theme_pubr() +
   coord_cartesian(xlim = c(0,5)) + 
-  ylab(TeX("Pr$_{\\theta}(\\theta_5 = \\theta_{(1)}) -$ Pr$_{\\theta}(\\theta_4 = \\theta_{(1)})$")) + 
+  ylab(TeX("$\\widehat{\\psi}_{2,(1)} - \\widehat{\\psi}_{2,(2)}$")) + 
   xlab(TeX("Sample size per regimen, $n_k$")) + 
   annotate(geom = "text",
            x = -0.35, y = 0,
@@ -388,14 +610,15 @@ p3 <- highlow_full %>%
   geom_hline(yintercept = 0, 
              col= ucsf_col_pal[3],
              size = 1) + 
-  geom_violin(width = 1) +
+  geom_violin(width = 1,
+              alpha = 0.6) +
   geom_boxplot(width = 0.05,
                outlier.shape = NA,
                fill = "darkgray",
                alpha = 0.5) +
   ggpubr::theme_pubr() +
   coord_cartesian(xlim = c(0,5)) + 
-  ylab(TeX("Pr$_{\\theta}(\\theta_5 = \\theta_{(1)}) -$ Pr$_{\\theta}(\\theta_4 = \\theta_{(1)})$")) + 
+  ylab(TeX("$\\widehat{\\psi}_{2,(1)} - \\widehat{\\psi}_{2,(2)}$")) + 
   xlab(TeX("Sample size per regimen, $n_k$")) + 
   annotate(geom = "text",
            x = -0.35, y = 0,
@@ -409,7 +632,8 @@ p3 <- highlow_full %>%
            hjust = 0,
            vjust = 1.5,
            label = "Favors second\nbest regimen") + 
-  theme(legend.position = "none")
+  theme(legend.position = "none",
+        axis.title.x = element_blank())
 
 
 ggpubr::ggarrange(p1, p3, p2, ncol = 1,
@@ -425,3 +649,459 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
        device = "png"
 )
 ```
+
+#### Comparing Top 2
+
+```{r}
+temp1 <- even_full %>% 
+  group_by(sim, nk) %>% 
+  summarise(n.greater.than = min(p.subset.2[regimen %in% c("arm5", "arm4")]) > max(p.subset.2[!regimen %in% c("arm5", "arm4")])) %>% 
+  group_by(nk) %>% 
+  summarise(p.greater.than = mean(n.greater.than)) %>%
+  mutate(condition = "Even")
+
+temp2 <- high_full %>% 
+  group_by(sim, nk) %>% 
+  summarise(n.greater.than = min(p.subset.2[regimen %in% c("arm5", "arm4")]) > max(p.subset.2[!regimen %in% c("arm5", "arm4")])) %>% 
+  group_by(nk) %>% 
+  summarise(p.greater.than = mean(n.greater.than)) %>%
+  mutate(condition = "High")
+
+temp3 <- highlow_full %>% 
+  group_by(sim, nk) %>% 
+  summarise(n.greater.than = min(p.subset.2[regimen %in% c("arm5", "arm4")]) > max(p.subset.2[!regimen %in% c("arm5", "arm4")])) %>% 
+  group_by(nk) %>% 
+  summarise(p.greater.than = mean(n.greater.than)) %>%
+  mutate(condition = "High-low")
+
+p1 <- bind_rows(temp1, temp2, temp3) %>% 
+  ggplot(aes(x = nk, y = p.greater.than, col = condition, lty = condition)) + 
+  geom_line(size = 1) +
+  scale_y_continuous(TeX("Pr\\left($\\min\\{\\psi_{3,(1)},\\psi_{3,(2)}\\}$ > $\\max\\{\\psi_{3,(3)},\\psi_{3,(4)},\\psi_{3,(5)}\\}\\right)$"),
+                     breaks = seq(0,1,by = 0.2),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_color_manual(values = ucsf_col_pal) +
+  scale_x_continuous(TeX("$n_k$"))+
+  ggpubr::theme_pubr() +
+  coord_cartesian(ylim = c(0,1)) + 
+  theme(legend.title = element_blank(),
+        legend.position = c(0.92,0.15))
+
+p1
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
+                       paste0(Sys.Date(), "_lineplot-psi3-vis.png")),
+       device = "png",
+       width = 5,
+       height = 5,
+       units = "in")
+```
+
+## Together
+
++ TTP (high-low) and Mixed survival rates such that:
+  + Regimen 1 (control): 5% relapse rate, reference log10(TTP) slope
+  + Regimen 2 (sub-optimal regimen): 10% relapse rate, -10% relative log10(TTP) slope
+  + Regimen 3 (minimal regimen): 5% relapse rate, 10% relative log10(TTP) slope
+  + Regimen 4 (minimal regimen): 5% relapse rate, 35% relative log10(TTP) slope
+  + Regimen 5 (desirable regimen): 2.5% relapse rate, 40% relative log10(TTP) slope
+
+```{r data-combined, eval = FALSE}
+t1 <- nk_30_outcome_1$nk_30_even[[3]]$s97.situation1
+
+output <- NULL
+for (i in 1:1000){
+  t1 <- nk_30_outcome_1$nk_30_even[[i]]$s90.situation1
+  
+  out <- t1 %>% 
+    dplyr::select(status, patient.id, regimen) %>% 
+    distinct() %>% 
+    group_by(regimen) %>% 
+    summarise(t2 = mean(status)) 
+  
+  output <- bind_cols(output, out[,2])
+}
+
+colnames(output) <- paste0("sims", 1:1000)
+output %>% 
+  mutate(regimen = 1:5, .before = 1) %>%
+  pivot_longer(cols = 2:1001,
+              names_to = "sim",
+              values_to = "relapse") %>% 
+  ggplot(aes(x = as.factor(regimen), y = relapse)) + 
+  geom_boxplot()
+```
+
+## Single Example
+
+```{r relapse-single}
+df_relapse_single <- s95.sit1.30 %>% 
+  filter(sim == 7, ttp.condition == "even")
+
+df_relapse_single %>% 
+  kable() %>% 
+  kable_styling()
+```
+
+```{r ttp-single}
+df_single <- mcmc_mods_even_30[[7]] 
+
+# turning estimates into relative, % slopes
+df_single$arm2 <- (df_single$arm2 - df_single$arm1)/df_single$arm1
+df_single$arm3 <- (df_single$arm3 - df_single$arm1)/df_single$arm1
+df_single$arm4 <- (df_single$arm4 - df_single$arm1)/df_single$arm1
+df_single$arm5 <- (df_single$arm5 - df_single$arm1)/df_single$arm1
+
+df_single[,2:5] %>% 
+  pivot_longer(names_to = "regimen",
+               values_to = "cred.est",
+               cols = 1:4) %>% 
+  group_by(regimen) %>% 
+  summarise(est.median = quantile(cred.est, probs = 0.5),
+            est.CI.l = quantile(cred.est, probs = 0.025),
+            est.CI.u = quantile(cred.est, probs = 0.975)) %>% 
+  kable(digits = 3) %>% 
+  kable_styling()
+```
+
+```{r}
+theta_lrv <- 0
+theta_tv <- .2
+tau_lrv <- 0.025
+tau_tv <- 0.025
+
+decision_function <- function(theta_lrv, theta_tv, tau_lrv, tau_tv, mcmc_chain){
+  out <- mcmc_chain %>% 
+    pivot_longer(names_to = "regimen",
+                 values_to = "cred.est",
+                 cols = everything()) %>% 
+    group_by(regimen) %>% 
+    summarise(est.CI.l = quantile(cred.est, probs = tau_lrv),
+              est.CI.u = quantile(cred.est, probs = 1-tau_tv))
+  
+  output <- out %>% 
+    mutate(decision = case_when(est.CI.u <= theta_tv ~ "NO-GO",
+                                (est.CI.u > theta_tv & est.CI.l <= theta_lrv) ~ "Continue",
+                                (est.CI.u > theta_tv & est.CI.l > theta_lrv) ~ "GO"))
+  return(output)
+}
+
+decision_function(theta_lrv = theta_lrv, theta_tv = theta_tv, tau_lrv = tau_lrv, tau_tv = tau_tv, mcmc_chain = df_single[,2:5]) %>% 
+  kable(digits = 2) %>% 
+  kable_styling()
+```
+
+```{r}
+mcmc_rank_function(df_single) %>% 
+  kable(digits = 2) %>%
+  kable_styling()
+```
+
+```{r}
+df_single[,2:5] %>% 
+  pivot_longer(cols = everything(),
+               names_to = "regimen", 
+               values_to = "cred.est") %>% 
+  group_by(regimen) %>% 
+  summarise(p.greater.than.control = mean(cred.est > 0)) %>% 
+  kable(digits = 2) %>% 
+  kable_styling()
+```
+
+## Frequentist summaries {.tabset .tabset-pills}
+
+```{r}
+# Even
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-20_even.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-30_even.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-40_even.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-60_even.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-80_even.RData"))
+
+# High
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-20_high.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-30_high.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-40_high.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-60_high.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-80_high.RData"))
+
+# High-Low
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-20_highlow.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-30_highlow.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-40_highlow.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-60_highlow.RData"))
+load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-80_highlow.RData"))
+```
+
+```{r cache = TRUE, include=FALSE}
+coef_rank_fn <- function(modresults){
+  temp <- modresults$fixed[2:6,] %>% 
+    rownames_to_column(var = "Regimen") %>% 
+    mutate(Regimen = case_when(Regimen == "week" ~ "Regimen 1",
+                               Regimen == "week:arm2" ~ "Regimen 2",
+                               Regimen == "week:arm3" ~ "Regimen 3",
+                               Regimen == "week:arm4" ~ "Regimen 4",
+                               TRUE ~ "Regimen 5")) %>% 
+    mutate("Slope" = ifelse(Regimen != "Regimen 1", 
+                            Estimate + Estimate[Regimen == "Regimen 1"],
+                            Estimate)) %>% 
+    mutate(rank = rank(Slope)) # 5 is steepest
+  
+  output <- temp %>% 
+    dplyr::select(Regimen, Slope, `l-95% CI`, rank)
+  
+  return(output)
+}
+
+plan(multisession)
+rank20_even <- future_map_dfr(summary_mods_even_20, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank30_even <- future_map_dfr(summary_mods_even_30, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank40_even <- future_map_dfr(summary_mods_even_40, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank60_even <- future_map_dfr(summary_mods_even_60, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank80_even <- future_map_dfr(summary_mods_even_80, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+
+rank20_high <- future_map_dfr(summary_mods_high_20, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank30_high <- future_map_dfr(summary_mods_high_30, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank40_high <- future_map_dfr(summary_mods_high_40, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank60_high <- future_map_dfr(summary_mods_high_60, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank80_high <- future_map_dfr(summary_mods_high_80, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+
+rank20_highlow <- future_map_dfr(summary_mods_highlow_20, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank30_highlow <- future_map_dfr(summary_mods_highlow_30, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank40_highlow <- future_map_dfr(summary_mods_highlow_40, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank60_highlow <- future_map_dfr(summary_mods_highlow_60, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+rank80_highlow <- future_map_dfr(summary_mods_highlow_80, 
+                              ~coef_rank_fn(.x), 
+                              .id = "sim",
+                              .progress = TRUE)
+beepr::beep()
+```
+
+### P(top regimen has steepest estimated slope)
+
+```{r}
+p1 <- bind_rows(mutate(filter(rank20_even, rank >= 4), nk = 20, condition = "Even"),
+                mutate(filter(rank30_even, rank >= 4), nk = 30, condition = "Even"),
+                mutate(filter(rank40_even, rank >= 4), nk = 40, condition = "Even"),
+                mutate(filter(rank60_even, rank >= 4), nk = 60, condition = "Even"),
+                mutate(filter(rank80_even, rank >= 4), nk = 80, condition = "Even"),
+                mutate(filter(rank20_high, rank >= 4), nk = 20, condition = "High"),
+                mutate(filter(rank30_high, rank >= 4), nk = 30, condition = "High"),
+                mutate(filter(rank40_high, rank >= 4), nk = 40, condition = "High"),
+                mutate(filter(rank60_high, rank >= 4), nk = 60, condition = "High"),
+                mutate(filter(rank80_high, rank >= 4), nk = 80, condition = "High"),
+                mutate(filter(rank20_highlow, rank >= 4), nk = 20, condition = "High-low"),
+                mutate(filter(rank30_highlow, rank >= 4), nk = 30, condition = "High-low"),
+                mutate(filter(rank40_highlow, rank >= 4), nk = 40, condition = "High-low"),
+                mutate(filter(rank60_highlow, rank >= 4), nk = 60, condition = "High-low"),
+                mutate(filter(rank80_highlow, rank >= 4), nk = 80, condition = "High-low")) %>% 
+  group_by(condition, nk, sim) %>% 
+  summarise(p.true.present = max(Regimen == "Regimen 5")) %>% 
+  group_by(condition, nk) %>% 
+  summarise(p.true.present = mean(p.true.present)) %>% 
+  mutate(condition = factor(condition, levels = c("Even", "High-low", "High"))) %>% 
+  ggplot(aes(x = nk, y = p.true.present, lty = condition, col = condition)) + 
+  geom_hline(yintercept = 0.8,
+             lty = 2,
+             col = "darkgray") +
+  geom_line(size = 1) +
+  scale_color_manual(values = ucsf_col_pal) +
+  coord_cartesian(ylim = c(0,1)) +
+  scale_y_continuous(TeX("$p_1$"),
+                     breaks = seq(0,1,by = 0.2),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_x_continuous(TeX("$n_k$")) +
+  ggpubr::theme_pubr() +
+  theme(legend.position = c(0.9, 0.2),
+        legend.title = element_blank(),
+        axis.title.y = element_blank())
+
+bind_rows(mutate(filter(rank20_even, rank >= 4), nk = 20, condition = "Even"),
+          mutate(filter(rank30_even, rank >= 4), nk = 30, condition = "Even"),
+          mutate(filter(rank40_even, rank >= 4), nk = 40, condition = "Even"),
+          mutate(filter(rank60_even, rank >= 4), nk = 60, condition = "Even"),
+          mutate(filter(rank80_even, rank >= 4), nk = 80, condition = "Even"),
+          mutate(filter(rank20_high, rank >= 4), nk = 20, condition = "High"),
+          mutate(filter(rank30_high, rank >= 4), nk = 30, condition = "High"),
+          mutate(filter(rank40_high, rank >= 4), nk = 40, condition = "High"),
+          mutate(filter(rank60_high, rank >= 4), nk = 60, condition = "High"),
+          mutate(filter(rank80_high, rank >= 4), nk = 80, condition = "High"),
+          mutate(filter(rank20_highlow, rank >= 4), nk = 20, condition = "High-low"),
+          mutate(filter(rank30_highlow, rank >= 4), nk = 30, condition = "High-low"),
+          mutate(filter(rank40_highlow, rank >= 4), nk = 40, condition = "High-low"),
+          mutate(filter(rank60_highlow, rank >= 4), nk = 60, condition = "High-low"),
+          mutate(filter(rank80_highlow, rank >= 4), nk = 80, condition = "High-low")) %>% 
+  group_by(condition, nk, sim) %>% 
+  summarise(p.true.present = max(Regimen == "Regimen 5")) %>% 
+  group_by(condition, nk) %>% 
+  summarise(p.true.present = mean(p.true.present)) %>% 
+  kable(digits = 3) %>% 
+  kable_styling()
+
+p2 <- bind_rows(mutate(filter(rank20_even, rank == 5), nk = 20, condition = "Even"),
+                mutate(filter(rank30_even, rank == 5), nk = 30, condition = "Even"),
+                mutate(filter(rank40_even, rank == 5), nk = 40, condition = "Even"),
+                mutate(filter(rank60_even, rank == 5), nk = 60, condition = "Even"),
+                mutate(filter(rank80_even, rank == 5), nk = 80, condition = "Even"),
+                mutate(filter(rank20_high, rank == 5), nk = 20, condition = "High"),
+                mutate(filter(rank30_high, rank == 5), nk = 30, condition = "High"),
+                mutate(filter(rank40_high, rank == 5), nk = 40, condition = "High"),
+                mutate(filter(rank60_high, rank == 5), nk = 60, condition = "High"),
+                mutate(filter(rank80_high, rank == 5), nk = 80, condition = "High"),
+                mutate(filter(rank20_highlow, rank == 5), nk = 20, condition = "High-low"),
+                mutate(filter(rank30_highlow, rank == 5), nk = 30, condition = "High-low"),
+                mutate(filter(rank40_highlow, rank == 5), nk = 40, condition = "High-low"),
+                mutate(filter(rank60_highlow, rank == 5), nk = 60, condition = "High-low"),
+                mutate(filter(rank80_highlow, rank == 5), nk = 80, condition = "High-low")) %>% 
+  group_by(condition, nk, Regimen) %>% 
+  summarise(n = n()) %>% 
+  group_by(condition, nk) %>% 
+  summarise(prop = n/sum(n),
+            Regimen) %>% #kable() %>% kable_styling()
+  mutate(Regimen = factor(Regimen, levels = c(paste0("Regimen ", 1:5))),
+         theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(Regimen, "Regimen ")), ")}$"),
+         condition = factor(condition, levels = c("Even", "High-low", "High"))) %>%
+  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
+  ggplot(aes(x = nk, y = prop, fill = theta)) + 
+  facet_wrap(~condition) +
+  geom_area(position = "stack",
+            alpha = 0.9) +
+  scale_fill_manual(values = ucsf_col_pal[1:5], 
+                    labels = TeX) +
+  coord_cartesian(ylim = c(0,1)) +
+  scale_y_continuous(TeX("$p_3$"),
+                     breaks = seq(0,1,by = 0.2),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_x_continuous(TeX("$n_k$")) +
+  ggpubr::theme_pubr() +
+  theme(legend.position = c(0.9,0.22),
+        legend.title = element_blank(),
+        legend.margin = margin(0,2,1,1),
+        legend.direction = "vertical",
+        axis.title.y = element_blank())
+
+bind_rows(mutate(filter(rank20_even, rank == 5), nk = 20, condition = "Even"),
+                mutate(filter(rank30_even, rank == 5), nk = 30, condition = "Even"),
+                mutate(filter(rank40_even, rank == 5), nk = 40, condition = "Even"),
+                mutate(filter(rank60_even, rank == 5), nk = 60, condition = "Even"),
+                mutate(filter(rank80_even, rank == 5), nk = 80, condition = "Even"),
+                mutate(filter(rank20_high, rank == 5), nk = 20, condition = "High"),
+                mutate(filter(rank30_high, rank == 5), nk = 30, condition = "High"),
+                mutate(filter(rank40_high, rank == 5), nk = 40, condition = "High"),
+                mutate(filter(rank60_high, rank == 5), nk = 60, condition = "High"),
+                mutate(filter(rank80_high, rank == 5), nk = 80, condition = "High"),
+                mutate(filter(rank20_highlow, rank == 5), nk = 20, condition = "High-low"),
+                mutate(filter(rank30_highlow, rank == 5), nk = 30, condition = "High-low"),
+                mutate(filter(rank40_highlow, rank == 5), nk = 40, condition = "High-low"),
+                mutate(filter(rank60_highlow, rank == 5), nk = 60, condition = "High-low"),
+                mutate(filter(rank80_highlow, rank == 5), nk = 80, condition = "High-low")) %>% 
+  group_by(condition, nk, Regimen) %>% 
+  summarise(n = n()) %>% 
+  group_by(condition, nk) %>% 
+  summarise(prop = n/sum(n),
+            Regimen) %>%
+  kable(digits = 3) %>% 
+  kable_styling()
+
+p3 <- bind_rows(mutate(rank20_even, nk = 20, condition = "Even"),
+          mutate(rank30_even, nk = 30, condition = "Even"),
+          mutate(rank40_even, nk = 40, condition = "Even"),
+          mutate(rank60_even, nk = 60, condition = "Even"),
+          mutate(rank80_even, nk = 80, condition = "Even"),
+          mutate(rank20_high, nk = 20, condition = "High"),
+          mutate(rank30_high, nk = 30, condition = "High"),
+          mutate(rank40_high, nk = 40, condition = "High"),
+          mutate(rank60_high, nk = 60, condition = "High"),
+          mutate(rank80_high, nk = 80, condition = "High"),
+          mutate(rank20_highlow, nk = 20, condition = "High-low"),
+          mutate(rank30_highlow, nk = 30, condition = "High-low"),
+          mutate(rank40_highlow, nk = 40, condition = "High-low"),
+          mutate(rank60_highlow, nk = 60, condition = "High-low"),
+          mutate(rank80_highlow, nk = 80, condition = "High-low")) %>% 
+  filter((Regimen == "Regimen 2" & condition == "High-low") |
+         (Regimen == "Regimen 2" & condition == "High") |
+         (Regimen != "Regimen 1" & condition == "Even")) %>% 
+  group_by(Regimen, nk, condition) %>% 
+  mutate(neq.control = mean(`l-95% CI` > 0)) %>% 
+  mutate(Slope = case_when(Regimen == "Regimen 2" & condition == "High-low" ~ "-10%",
+                           Regimen == "Regimen 2" & condition == "High" ~ "35%",
+                           Regimen == "Regimen 2" & condition == "Even" ~ "10%",
+                           Regimen == "Regimen 3" & condition == "Even" ~ "20%",
+                           Regimen == "Regimen 4" & condition == "Even" ~ "30%",
+                           Regimen == "Regimen 5" & condition == "Even" ~ "40%")) %>% 
+  mutate(Slope = factor(Slope, levels = c("-10%", "10%", "20%", "30%", "35%", "40%")),
+         Slope.num = as.numeric(str_remove(Slope, "%"))) %>% 
+  ggplot(aes(x = Slope.num, y = neq.control, col = as.factor(nk), lty = as.factor(nk))) + 
+  geom_hline(yintercept = 0.8, lty = 2, col = "darkgray") +
+  geom_line(aes(group = nk),
+            size = 1) +
+  scale_color_manual("nk", values = ucsf_col_pal) +
+  scale_linetype_manual("nk", values = 1:5) +
+  ggpubr::theme_pubr() + 
+  scale_y_continuous(TeX("$p_6$"),
+                     breaks = seq(0,1,by = 0.2),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_x_continuous("Slope, %", 
+                     breaks = seq(-10,40,by = 10),
+                     labels = c("-10%", "0%", "10%", "20%", "30%", "40%")) +
+  theme(legend.position = c(0.9,0.22),
+        axis.title.y = element_blank(),
+        legend.title = element_blank())
+  
+p2 + p1 + p3 + 
+  plot_annotation(tag_levels = "A") 
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", 
+                       paste0(Sys.Date(), "_panel-plot-frequentist-summaries.png")),
+       device = "png",
+       width = 13,
+       height = 5,
+       units = "in")
+```
+
