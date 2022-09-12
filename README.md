@@ -12,6 +12,8 @@
 
 ### docs
 
++ `simulation-results_full.Rmd` contains the simulation results for the random intercept, random slope simulated datasets. Also includes code for generating figures for the manuscript.
+  + 
 + `sample-study-design.html` describes the set-up for the simulated datasets
 + `simulation-study-results.html` is the larger comprehensive file containing all analysis results from all simulated datasets
 + `simulation-overview.html` [NEEDS UPDATING] should contain an ADEMP map of the project
