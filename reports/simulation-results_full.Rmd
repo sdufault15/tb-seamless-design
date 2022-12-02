@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = FALSE,
 
 library(tidyverse)
 library(patchwork)
+library(jpeg) # https://www.geeksforgeeks.org/how-to-add-image-to-ggplot2-in-r/
 library(here)
 library(kableExtra)
 library(latex2exp)
@@ -28,6 +29,146 @@ source(here("lib", "mcmc-compare-v-control.R"))
 ```
 
 # Output {.tabset}
+
+## Settings
+
+```{r lineplot-simulating-ttp}
+# Call in model being used as "truth"
+load("~/Library/CloudStorage/OneDrive-UniversityofCalifornia,SanFrancisco/ucsf-research/phase2b-simstudy/data/bayes-generated/2021-12-14_remox-lmm-short.RData")
+
+# Pull out coefficients
+s <- summary(fit.cens)
+betas_orig <- c(s$fixed$Estimate)
+
+p0 <- data.frame(Control = betas_orig[1] + betas_orig[2]*0:8,
+           Regimen1 = betas_orig[1] + betas_orig[2]*0:8 + betas_orig[3]*0:8,
+           Regimen2 = betas_orig[1] + betas_orig[2]*0:8 + betas_orig[4]*0:8,
+           weeks = 0:8) %>% 
+  pivot_longer(cols = 1:3,
+               values_to = "log10(TTP)",
+               names_to = "Regimen") %>% 
+  ggplot(aes(x = weeks, y = 10^(`log10(TTP)`), col = Regimen)) + 
+  geom_line() + 
+  scale_y_log10("TTP in days, log10 scale",
+                breaks = c(5,7,10,15,20,25,35),
+                labels = c(5,7,10,15,20,25,35)) + 
+  scale_x_continuous("Days from randomization",
+                     breaks = 0:8,
+                     labels = seq(0,56, by = 7)) + 
+  scale_color_manual(values = ucsf_col_pal,
+                     labels = c(1:3)) +
+  scale_linetype_discrete(labels = c(1:3)) +
+  coord_cartesian(ylim = c(7,35)) + 
+  ggtitle("Original REMoxTB data",
+          subtitle = "Linear Bayesian hierarchical model") + 
+  theme_bw()
+
+betas_orig <- c(s$fixed$Estimate)[1:2] # (just the intercept and control group slope for now)
+
+slopes_even <- seq(0.1,0.4,by = 0.1)
+beta_Regimens <- betas_orig[2]*slopes_even # multiplying the control group slope by the a priori %change
+betas <- c(betas_orig, beta_Regimens) # length k+1 (intercept + slopes per K Regimens)
+
+p1 <- data.frame(Control = betas[1] + betas[2]*0:8,
+           Regimen1 = betas[1] + betas[2]*0:8 + betas[3]*0:8,
+           Regimen2 = betas[1] + betas[2]*0:8 + betas[4]*0:8,
+           Regimen3 = betas[1] + betas[2]*0:8 + betas[5]*0:8,
+           Regimen4 = betas[1] + betas[2]*0:8 + betas[6]*0:8,
+           weeks = 0:8) %>% 
+  pivot_longer(cols = 1:5,
+               values_to = "log10(TTP)",
+               names_to = "Regimen") %>% 
+  ggplot(aes(x = weeks, y = 10^(`log10(TTP)`), col = Regimen, lty = Regimen)) + 
+  geom_line() + 
+  scale_y_log10("TTP in days, log10 scale",
+                breaks = c(5,7,10,15,20,25,35),
+                labels = c(5,7,10,15,20,25,35)) + 
+  scale_x_continuous("Days from randomization",
+                     breaks = 0:8,
+                     labels = seq(0,56, by = 7)) + 
+  scale_color_manual(values = ucsf_col_pal,
+                     labels = c(1:5)) +
+  scale_linetype_discrete(labels = c(1:5)) +
+  coord_cartesian(ylim = c(7,35)) + 
+  ggtitle("Even condition", subtitle = c("10%, 20%, 30%, 40%")) + 
+  theme_bw()
+
+slopes_highlow <- c(-.1, .1, .35, .4)
+beta_Regimens <- betas_orig[2]*slopes_highlow # multiplying the control group slope by the a priori %change
+betas <- c(betas_orig, beta_Regimens) # length k+1 (intercept + slopes per K Regimens)
+
+p2 <- data.frame(Control = betas[1] + betas[2]*0:8,
+           Regimen1 = betas[1] + betas[2]*0:8 + betas[3]*0:8,
+           Regimen2 = betas[1] + betas[2]*0:8 + betas[4]*0:8,
+           Regimen3 = betas[1] + betas[2]*0:8 + betas[5]*0:8,
+           Regimen4 = betas[1] + betas[2]*0:8 + betas[6]*0:8,
+           weeks = 0:8) %>% 
+  pivot_longer(cols = 1:5,
+               values_to = "log10(TTP)",
+               names_to = "Regimen") %>% 
+  ggplot(aes(x = weeks, y = 10^(`log10(TTP)`), col = Regimen, lty = Regimen)) + 
+  geom_line() + 
+  scale_y_log10("TTP in days, log10 scale",
+                breaks = c(5,7,10,15,20,25,35),
+                labels = c(5,7,10,15,20,25,35)) + 
+  scale_x_continuous("Days from randomization",
+                     breaks = 0:8,
+                     labels = seq(0,56, by = 7)) +
+  scale_color_manual(values = ucsf_col_pal,
+                     labels = c(1:5)) +
+  scale_linetype_discrete(labels = c(1:5)) +
+  coord_cartesian(ylim = c(7,35)) + 
+  ggtitle("High-low condition", subtitle = c("-10%, 10%, 35%, 40%")) + 
+  theme_bw()
+
+slopes_high <- c(.35, .37, .39, .41)
+beta_Regimens <- betas_orig[2]*slopes_high # multiplying the control group slope by the a priori %change
+betas <- c(betas_orig, beta_Regimens) # length k+1 (intercept + slopes per K Regimens)
+
+p3 <- data.frame(Control = betas[1] + betas[2]*0:8,
+           Regimen1 = betas[1] + betas[2]*0:8 + betas[3]*0:8,
+           Regimen2 = betas[1] + betas[2]*0:8 + betas[4]*0:8,
+           Regimen3 = betas[1] + betas[2]*0:8 + betas[5]*0:8,
+           Regimen4 = betas[1] + betas[2]*0:8 + betas[6]*0:8,
+           weeks = 0:8) %>% 
+  pivot_longer(cols = 1:5,
+               values_to = "log10(TTP)",
+               names_to = "Regimen") %>% 
+  ggplot(aes(x = weeks, y = 10^(`log10(TTP)`), col = Regimen, lty = Regimen)) + 
+  geom_line() + 
+  scale_y_log10("TTP in days, log10 scale",
+                breaks = c(5,7,10,15,20,25,35),
+                labels = c(5,7,10,15,20,25,35)) + 
+  scale_x_continuous("Days from randomization",
+                     breaks = 0:8,
+                     labels = seq(0,56, by = 7)) + 
+  scale_color_manual(values = ucsf_col_pal,
+                     labels = c(1:5)) +
+  scale_linetype_discrete(labels = c(1:5)) +
+  coord_cartesian(ylim = c(7,35)) + 
+  ggtitle("High condition", subtitle = c("35%, 37%, 39%, 41%")) + 
+  theme_bw()
+
+ttp_fig <- gridExtra::grid.arrange(p0,p1,p2,p3)
+```
+
+```{r fig.width=10, fig.height=5}
+library(magick)
+survival_fig <- image_ggplot(image_read(here("graphs", "simulation-settings","2022-03-22_survival-curve-general.jpg")))
+ggpubr::ggarrange(ttp_fig, survival_fig,
+                  widths = c(3,2),
+                  labels = "AUTO",
+                  heights = 1)
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-settings",
+                       paste0(Sys.Date(), "_ttp-relapse-simulation-settings.jpeg")),
+       device = "jpeg",
+       units = "in",
+       width = 10,
+       height = 5)
+```
 
 ## Relapse 
 
@@ -121,6 +262,40 @@ bind_rows(mutate(s95.sit1.30, nk = 30),
             prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
   ungroup() %>% 
   pivot_longer(cols = prop_stopped_1:prop_stopped_3,
+               names_to = "threshold",
+               values_to = "prop_stopped") %>% 
+  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
+  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Relapse Rate",
+                          regimen == 4 ~ "Minimal: 5% Relapse Rate",
+                          regimen == 5 ~ "Desirable: 2.5% Relapse Rate"),
+         threshold = str_remove(threshold, "prop_stopped_")) %>% 
+  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Relapse Rate","Minimal: 5% Relapse Rate","Desirable: 2.5% Relapse Rate"))) %>% 
+  ggplot(aes(x = as.factor(nk),
+             y = threshold, 
+             # shape = threshold, 
+             fill = prop_stopped)) + 
+  facet_wrap(~rate, ncol = 1) + 
+  geom_tile() + 
+  geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
+            col = "white") +
+  ggpubr::theme_pubr() + 
+  scale_y_discrete("Relapse threshold") +
+  scale_x_discrete(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) + 
+  scale_fill_viridis_c(TeX("Pr(No. observed relapses $\\geq$ threshold)")) + 
+  theme(legend.position = "bottom")
+
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
+            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
+            prop_stopped_3 = mean(n_relapse_interim1 >= 3),
+            prop_stopped_4 = mean(n_relapse_interim1 >= 4),
+            prop_stopped_5 = mean(n_relapse_interim1 >= 5)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = prop_stopped_1:prop_stopped_5,
                names_to = "threshold",
                values_to = "prop_stopped") %>% 
   filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
@@ -477,6 +652,172 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
        device = "png",
        height = 6,
        width = 10,
+       units = "in")
+```
+
+```{r barplot-posterior-prob-top1, eval = FALSE}
+even_stat <- ranking_probabilities$even_probabilities %>% 
+  group_by(sim, nk) %>% 
+  mutate(top = as.numeric(p.subset.1 == max(p.subset.1))) %>% 
+  group_by(regimen, nk) %>% 
+  summarise(n_top = sum(top)) %>% 
+  mutate(condition = "Even")
+hl_stat <- ranking_probabilities$highlow_probabilities %>% 
+  group_by(sim, nk) %>% 
+  mutate(top = as.numeric(p.subset.1 == max(p.subset.1))) %>% 
+  group_by(regimen, nk) %>% 
+  summarise(n_top = sum(top)) %>% 
+  mutate(condition = "High-low")
+high_stat <- ranking_probabilities$high_probabilities %>% 
+  group_by(sim, nk) %>% 
+  mutate(top = as.numeric(p.subset.1 == max(p.subset.1))) %>% 
+  group_by(regimen, nk) %>% 
+  summarise(n_top = sum(top)) %>% 
+  mutate(condition = "High")
+
+bind_rows(even_stat,
+          hl_stat,
+          high_stat) %>% 
+  mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$"),
+         condition = factor(condition, levels = c("Even", "High-low", "High"))) %>%
+  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
+  ggplot(aes(x = nk, y = n_top, fill = theta)) + 
+  facet_wrap(~condition, nrow = 1) +
+  geom_area(position = "stack",
+            alpha = 0.9) +
+  scale_fill_manual(values = ucsf_col_pal[1:5], 
+                    labels = TeX) +
+  coord_cartesian(ylim = c(0,1000)) +
+  scale_y_continuous(TeX("$p_3$"),
+                     breaks = seq(0,1000,by = 200),
+                     labels = seq(0,1,by = 0.2)) +
+  scale_x_continuous(TeX("$n_k$")) +
+  ggpubr::theme_pubr() +
+  theme(legend.position = c(0.9,0.22),
+        legend.title = element_blank(),
+        legend.margin = margin(0,2,1,1),
+        legend.direction = "vertical",
+        axis.title.y = element_blank())
+
+  # ggplot(aes(x = nk, y = n_top, fill = regimen)) + 
+  # geom_bar(stat = "identity") +
+  # scale_fill_manual("")
+```
+
+```{r}
+p1 <- mutate(ranking_probabilities$even_probabilities, condition = "Even") %>% 
+  filter(regimen %in% c("arm4", "arm5"),
+         nk < 60) %>% 
+  mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
+  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
+  group_by(regimen, nk) %>% 
+  mutate(median = median(p.subset.1)) %>% 
+  ggplot(aes(x = p.subset.1, fill = theta)) + 
+  geom_density(alpha = 0.6,
+               col = "white") + 
+  geom_segment(aes(x = median, xend = median, y = 0, yend = 2.5, col = theta, lty = regimen)) +
+  geom_point(aes(x = median, y = 0.1, bg = theta),
+             shape = 24,
+             size = 2,
+             col = "white") +
+  scale_fill_manual(values = ucsf_col_pal[1:5], 
+                    labels = TeX) +
+  scale_color_manual(values = ucsf_col_pal[1:5], 
+                     labels = TeX) +
+  scale_linetype_manual(values = c(2,3), 
+                        labels = TeX,
+                        guide = "none") +
+  facet_wrap(~nk, ncol = 1) + 
+  coord_cartesian(ylim = c(0,2.75)) +
+  scale_x_continuous(TeX("$\\Pr_{\\theta}(\\theta_k = \\theta_{(1)}|X)$")) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none",
+        legend.title = element_blank(),
+        legend.margin = margin(0,2,1,1),
+        legend.direction = "vertical",
+        axis.title.y = element_blank())
+
+p2 <- mutate(ranking_probabilities$highlow_probabilities, condition = "High-low") %>% 
+  filter(regimen %in% c("arm4", "arm5"),
+         nk < 60) %>% 
+  mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
+  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
+  group_by(regimen, nk) %>% 
+  mutate(median = median(p.subset.1)) %>% 
+  ggplot(aes(x = p.subset.1, fill = theta)) + 
+  geom_density(alpha = 0.6,
+               col = "white") + 
+  geom_segment(aes(x = median, xend = median, y = 0, yend = 2.5, col = theta, lty = theta)) +
+  geom_point(aes(x = median, y = 0.1, bg = theta),
+             shape = 24,
+             size = 2,
+             col = "white") +
+  coord_cartesian(ylim = c(0,2.75)) +
+  scale_fill_manual(values = ucsf_col_pal[1:5], 
+                    labels = TeX) +
+  scale_color_manual(values = ucsf_col_pal[1:5], 
+                    labels = TeX) +
+  scale_linetype_manual(values = c(2,3), 
+                        labels = TeX,
+                        guide = "none") +
+  facet_wrap(~nk, ncol = 1) + 
+  scale_x_continuous(TeX("$\\Pr_{\\theta}(\\theta_k = \\theta_{(1)}|X)$")) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none",
+        legend.title = element_blank(),
+        legend.margin = margin(0,2,1,1),
+        legend.direction = "vertical",
+        axis.title.y = element_blank())
+
+p3 <- mutate(ranking_probabilities$high_probabilities, condition = "High") %>% 
+  filter(regimen %in% c("arm4", "arm5"),
+         nk < 60) %>% 
+  mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
+  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
+  group_by(regimen, nk) %>% 
+  mutate(median = median(p.subset.1)) %>% 
+  ggplot(aes(x = p.subset.1, fill = theta)) + 
+  geom_density(alpha = 0.6,
+               col = "white") + 
+  geom_segment(aes(x = median, xend = median, y = 0, yend = 2.5, col = theta, lty = theta)) +
+  geom_point(aes(x = median, y = 0.1, bg = theta),
+             shape = 24,
+             col = "white") +
+  scale_fill_manual(values = ucsf_col_pal[1:2],
+                    labels = TeX) +
+  scale_color_manual(values = ucsf_col_pal[1:5], 
+                     labels = TeX,
+                     # aesthetics = c("color", "bg", "fill")) +#,
+                     guide = "none") +
+  scale_linetype_manual(values = c(2,3), 
+                        labels = TeX,
+                        guide = "none") +
+  coord_cartesian(ylim = c(0,2.75)) +
+  facet_wrap(~nk, ncol = 1) + 
+  scale_x_continuous(TeX("$\\Pr_{\\theta}(\\theta_k = \\theta_{(1)}|X)$")) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = c(0.9,0.15),
+        legend.title = element_blank(),
+        legend.margin = margin(0,2,1,1),
+        legend.direction = "vertical",
+        axis.title.y = element_blank())
+
+p1 + p2 + p3 + 
+  plot_annotation(tag_levels = "A") 
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", 
+                       paste0(Sys.Date(), "_density-plot_prob-steepest_top-2.png")),
+       device = "png",
+       width = 10,
+       height = 5,
        units = "in")
 ```
 
