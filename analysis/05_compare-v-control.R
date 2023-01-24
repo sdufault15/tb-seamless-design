@@ -32,3 +32,4 @@ comparisons <- bind_rows(compare_even,
                          compare_high)
 save(comparisons, file = here("data", "analyzed", "ranking",
                               paste0(Sys.Date(), "_compare-v-control.RData")))
+beepr::beep()

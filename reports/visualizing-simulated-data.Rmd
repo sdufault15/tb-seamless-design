@@ -1,0 +1,748 @@
+---
+title: "Visualizing Simulated Data"
+author: "Suzanne Dufault"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.path = "../graphs/simulation-settings/")
+
+library(here)
+library(tidyverse)
+library(haven)
+
+load(here("data", "bayes-generated", "2021-12-20_remox-lmm-short_intercept-only_lower-detection-25.RData"))
+s <- summary(fit.cens.intercept.ld.25)
+betas <- c(s$fixed$Estimate)[1:2] # (just the intercept and control group slope for now)
+# Pull out individual-level SD
+sd_id <- s$random$trial_no$Estimate[1]
+# Pull out residual SD
+sd_randomnoise <- s$spec_pars$Estimate[1]
+
+load(here("data", "bayes-generated", "2021-12-20_remox-lmm-short_lower-detection-25.RData"))
+s2 <- summary(fit.cens.ld.25)
+betas2 <- c(s2$fixed$Estimate)[1:2] # (just the intercept and control group slope for now)
+# Pull out individual-level SD
+sd_id2 <- s2$random$trial_no$Estimate[1]
+# Pull out slope-level SD
+sd2_id2 <- s2$random$trial_no$Estimate[2]
+# Random effects correlation
+rho <- s2$random$trial_no$Estimate[3]
+# Pull out residual SD
+sd_randomnoise2 <- s2$spec_pars$Estimate[1]
+```
+
+# Objective {.tabset}
+
+These visualizations compare the observed control arm (HRZE) of the REMoxTB study to 1,000 simulations of the control arm, based on the following data-generating mechanism:
+
+Assuming the relationship between the log10(TTP) and weeks since randomization (for individuals assigned to a single intervention) can be simply described as:
+
+1. A linear random intercept model, where the log10(TTP) for each individual $i$ at time $t$ can be expressed as:
+
+\[\log_{10}(TTP_{it}) = (\beta_0 + \beta_{0i}) + \beta_1\cdot\text{weeks}_t + \beta_2\cdot\mathbb{I}\{\text{arm}_i = 2\}\cdot\text{weeks}_t + \ldots + \beta_K\cdot\mathbb{I}\{\text{arm}_i = K\}\cdot\text{weeks}_t + e_{it}\]
+
+
+2. A linear random intercept, random slope model, where the log10(TTP) for each individual $i$ at time $t$ can be expressed as:
+
+\[\log_{10}(TTP_{it}) = (\beta_0 + \beta_{0i}) + (\beta_1 + \beta_{1i})\cdot\text{weeks}_t + \beta_2\cdot\mathbb{I}\{\text{arm}_i = 2\}\cdot\text{weeks}_t + \ldots + \beta_K\cdot\mathbb{I}\{\text{arm}_i = K\}\cdot\text{weeks}_t + e_{it}\]
+
+where   
+
++ $\beta_0$ is the mean $\log_{10}(TTP)$ at baseline    
++ $\beta_1$ = `r round(betas[2],3)` is the mean change in $\log_{10}(TTP)$ for a unit change in weeks since randomization for those in the control group
++ $\beta_k$ is the difference in mean change in $\log_{10}(TTP)$ for a unit change in weeks since randomization for those in arm $k>1$ compared to those in the control group.
++ $\beta_{0i}$ is the random intercept for each individual
++ $\beta_{1i}$ is the random slope for each individual
++ $e_{it}$ is the random variability/measurement error for the measurement on individual $i$ at time $t$. 
+
+Note: $\beta_{0i} \sim N(0,\sigma_{g_1}^2)$, $\beta_{1i} \sim N(0,\sigma_{g_2}^2)$, $\rho = \text{Cor}(\beta_{0i}, \beta_{1i})$, $e_{it} \sim N(0,\sigma_e)$.
+
+Though the simulated datasets have more than one treatment arm, (where each $\beta_k, k\in\{2,\ldots,K\}$ is the percent change in slope relative to the control arm), and therefore the data-generating mechanism is technically specified by the above equation, we are only able to compare how well the simulated control arm is to the observed control arm, since the other treatment arms are hypothetical in nature.
+
+We prespecify $\beta_0, \beta_{k} \text{ for }k=\{1, \ldots K\}, \sigma_{g_1}, \sigma_{g_2},\rho, \sigma_e$ in order to simulate the data. The values for $\beta_0$, $\beta_1$, $\sigma_{g_1}, \sigma_{g_2},\rho,\sigma_e$ all come from the estimated parameters of the two Bayesian linear mixed effects model (one with random intercept per participant and another with random intercept and random slope) of the REMoxTB data. 
+
+| Coefficient | REMoxTB Estimate (random intercept) | REMoxTB Estimate (random intercept, random slope) |
+|:-----------:|:-----------------------------------:|:------------------------------------------:|
+| $\beta_0$ | `r round(betas[1],3)` | `r format(round(betas2[1],3),nsmall = 3)` |
+| $\beta_1$ | `r round(betas[2],3)` | `r round(betas2[2],3)` |
+| $\sigma_{g1}$ | `r round(sd_id, 3)` | `r round(sd_id2, 3)`|
+| $\sigma_{g2}$ | | `r round(sd2_id2, 3)` |
+| $\sigma_{e}$ | `r format(round(sd_randomnoise,3), nsmall = 3)`| `r format(round(sd_randomnoise2,3), nsmall = 3)` |
+| $\rho$ | | `r format(round(rho,3), nsmall = 3)` |
+
+## Observed
+```{r}
+# Calling in observed data
+cl_patientdata4sunita <- read_dta(here("data", "cl_patientdata4sunita.dta"))
+cl_culturedata4sunita <- read_dta(here("data","cl_culturedata4sunita.dta"))
+cl_df <- full_join(cl_patientdata4sunita,
+                   cl_culturedata4sunita)
+df_analysis <- cl_df %>% 
+  filter(bact == 1, weeks <= 8, result < 6) %>% 
+  # Add a censoring variable (if result is negative AND is.na(DTP), then censored) 
+  mutate(dtp_42 = ifelse(is.na(dtp), 42, dtp),
+         censored_42 = ifelse(result == 0 & is.na(dtp), "right", "none"),
+         dtp_30 = ifelse(is.na(dtp) | dtp > 30, 30, dtp),
+         censored_30 = ifelse((result == 0 & is.na(dtp)) | (!is.na(dtp) & dtp > 30), "right", "none"),
+         dtp_25 = ifelse(is.na(dtp) | dtp > 25, 25, dtp),
+         censored_25 = ifelse((result == 0 & is.na(dtp)) | (!is.na(dtp) & dtp > 25), "right", "none"))
+```
+
+```{r lineplots_observed-values, fig.height = 8, fig.width=10}
+p1 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp), na.rm = TRUE),
+            p.975 = quantile(log10(dtp), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue") + 
+  geom_line(aes(y = p.025), col = "blue") + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,2)) + 
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "As if the limit of detection was 25.")
+
+p2 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot(aes(x = week, y = prop_neg)) + 
+  geom_point() + 
+  geom_line() + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+gridExtra::grid.arrange(p1, p2,
+                        ncol = 1,
+                        heights = c(2,1))
+```
+
+## Simulated $n_k$ = 20
+
+```{r}
+#########################
+# Random Intercept Model
+#########################
+load("~/OneDrive - University of California, San Francisco/ucsf-research/phase2b-simstudy/data/simulated-datasets/2022-01-12_simulated-df_cluster-low-high.RData")
+
+# 20 patients per arm
+temp <- map_dfr(df_sims_s2, ~(.x[[1]])) %>% 
+  mutate(sim_id = rep(1:1000, each = 20*9*5))
+
+# 30 patients per arm
+temp2 <- map_dfr(df_sims_s2, ~(.x[[2]])) %>% 
+  mutate(sim_id = rep(1:1000, each = 30*9*5))
+
+# 40 patients per arm
+temp3 <- map_dfr(df_sims_s2, ~(.x[[3]])) %>% 
+  mutate(sim_id = rep(1:1000, each = 40*9*5))
+
+##################################################
+# Random Intercept,Random Slope Model
+##################################################
+load("~/OneDrive - University of California, San Francisco/ucsf-research/phase2b-simstudy/data/simulated-datasets/2022-01-27_simulated-df_cluster-low-high_random-slope.RData")
+
+# 20 patients per arm
+temp_rs <- map_dfr(df_sims_s2, ~(.x[[1]])) %>% 
+  ungroup() %>% 
+  mutate(sim_id = rep(1:1000, each = 20*9*5))
+
+# 30 patients per arm
+temp2_rs <- map_dfr(df_sims_s2, ~(.x[[2]])) %>% 
+  ungroup() %>% 
+  mutate(sim_id = rep(1:1000, each = 30*9*5))
+
+# 40 patients per arm
+temp3_rs <- map_dfr(df_sims_s2, ~(.x[[3]])) %>% 
+  ungroup() %>% 
+  mutate(sim_id = rep(1:1000, each = 40*9*5))
+```
+
+```{r}
+# let's look at the reference group and compare it against the observed values
+##################################################
+# Random Intercept Model
+##################################################
+t20 <- temp %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", log10(25), yij_censored)) %>% 
+  group_by(sim_id, week = round(week)) %>% 
+  summarize(median = median(yij_censored, na.rm = TRUE),
+            p.975 = quantile(yij_censored, probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(yij_censored, probs = 0.025, na.rm = TRUE)) %>% # simulation specific medians
+  group_by(week) %>% 
+  mutate(median.p.975 = quantile(median, probs = 0.975, na.rm = TRUE),
+         median.p.025 = quantile(median, probs = 0.025, na.rm = TRUE),
+         p.975.975 = quantile(p.975, probs = 0.975, na.rm = TRUE),
+         p.975.025 = quantile(p.975, probs = 0.025, na.rm = TRUE),
+         p.025.025 = quantile(p.025, probs = 0.025, na.rm = TRUE),
+         p.025.975 = quantile(p.025, probs = 0.975, na.rm = TRUE))
+
+t20_neg <- temp %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(week = round(week), sim_id) %>% 
+  summarise(prop_neg = mean(is.na(yij_censored))) %>% 
+  group_by(week) %>% 
+  summarise(prop.neg.975 = quantile(prop_neg, probs = 0.975, na.rm = TRUE),
+            prop.neg.025 = quantile(prop_neg, probs = 0.025, na.rm = TRUE))
+
+##################################################
+# Random Intercept, Slope Model
+##################################################
+t20_rs <- temp_rs %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", log10(25), yij_censored)) %>% 
+  group_by(sim_id, week = round(week)) %>% 
+  summarize(median = median(yij_censored, na.rm = TRUE),
+            p.975 = quantile(yij_censored, probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(yij_censored, probs = 0.025, na.rm = TRUE)) %>% # simulation specific medians
+  group_by(week) %>% 
+  mutate(median.p.975 = quantile(median, probs = 0.975, na.rm = TRUE),
+         median.p.025 = quantile(median, probs = 0.025, na.rm = TRUE),
+         p.975.975 = quantile(p.975, probs = 0.975, na.rm = TRUE),
+         p.975.025 = quantile(p.975, probs = 0.025, na.rm = TRUE),
+         p.025.025 = quantile(p.025, probs = 0.025, na.rm = TRUE),
+         p.025.975 = quantile(p.025, probs = 0.975, na.rm = TRUE))
+
+t20_neg_rs <- temp_rs %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(week = round(week), sim_id) %>% 
+  summarise(prop_neg = mean(is.na(yij_censored))) %>% 
+  group_by(week) %>% 
+  summarise(prop.neg.975 = quantile(prop_neg, probs = 0.975, na.rm = TRUE),
+            prop.neg.025 = quantile(prop_neg, probs = 0.025, na.rm = TRUE))
+```
+
+```{r lineplots_observed-values_20nk-sims, fig.height = 8, fig.width=12}
+##################################################
+# Random Intercept Model
+##################################################
+p1 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp), na.rm = TRUE),
+            p.975 = quantile(log10(dtp), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue") + 
+  geom_line(aes(y = p.025), col = "blue") + 
+  geom_ribbon(aes(x = week, ymin = median.p.025, ymax = median.p.975, group = 1), 
+              data = t20, 
+              fill = "red",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.025.025, ymax = p.025.975, group = 1), 
+              data = t20, 
+              fill = "blue",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.975.025, ymax = p.975.975, group = 1), 
+              data = t20, 
+              fill = "blue",
+              alpha = 0.3) +
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,2)) + 
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "Limit of detection = 25, N_k = 20, Random Intercept")
+
+p2 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot() + 
+  geom_point(aes(x = week, y = prop_neg)) + 
+  geom_line(aes(x = week, y = prop_neg)) + 
+  geom_ribbon(data = t20_neg,
+              aes(x = week, ymin = prop.neg.025, ymax = prop.neg.975),
+              fill = "darkgray",
+              alpha = 0.3) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+##################################################
+# Random Intercept, Slope Model
+##################################################
+p1_rs <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  # mutate(dtp = ifelse(censored_25 == "right", 25, dtp)) %>% view()
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp_25), na.rm = TRUE),
+            p.975 = quantile(log10(dtp_25), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp_25), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue", lty = 2) + 
+  geom_line(aes(y = p.025), col = "blue", lty = 2) + 
+  geom_ribbon(aes(x = week, ymin = median.p.025, ymax = median.p.975, group = 1), 
+              data = t20_rs, 
+              fill = "red",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.025.025, ymax = p.025.975, group = 1), 
+              data = t20_rs, 
+              fill = "blue",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.975.025, ymax = p.975.975, group = 1), 
+              data = t20_rs, 
+              fill = "blue",
+              alpha = 0.3) +
+  theme_bw() + 
+  coord_cartesian(ylim = c(log10(1),log10(31))) + 
+  scale_y_continuous(breaks = c(log10(c(5,7,10, 15, 20,25,30))),
+                     labels = c(5,7,10, 15, 20,25,30)) +
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "Limit of detection = 25, N_k = 20, Random Intercept, Slope")
+
+p2_rs <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot() + 
+  geom_point(aes(x = week, y = prop_neg)) + 
+  geom_line(aes(x = week, y = prop_neg)) + 
+  geom_ribbon(data = t20_neg_rs,
+              aes(x = week, ymin = prop.neg.025, ymax = prop.neg.975),
+              fill = "darkgray",
+              alpha = 0.3) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+gridExtra::grid.arrange(p1, p1_rs, p2, p2_rs,
+                        ncol = 2,
+                        heights = c(2,1),
+                        name = "Weeks")
+```
+
+```{r}
+library(patchwork)
+p1_rs + p2_rs + 
+  plot_layout(ncol = 1)
+```
+
+#### Density plots
+
+The observed data (solid line) against one simulated dataset of the random intercept model (dashed, blue line) and one simulated dataset of the random intercept, random slope model (dotted, red line).
+
+```{r density-plot_pred-v-observed-weekly, fig.width=8, fig.height=8,fig.cap="The observed (solid line) versus predicted (dashed line) values of log10(TTP) censored at 25 days by week since randomization. Censored values are marked as log10(25) and included for visualization at the far right of the plot."}
+
+df_analysis %>% 
+  ggplot(aes(x = dtp_25)) + 
+  facet_wrap(~round(weeks),
+             scales = "free") + 
+  geom_density() + 
+  geom_density(data = filter(temp, arm == 1, sim_id == 2),
+               aes(x = 10^yij_censored),
+               lty = 2,
+               col = "blue") +
+  geom_density(data = filter(temp_rs, arm == 1, sim_id == 2),
+               aes(x = 10^yij_censored),
+               lty = 3,
+               col = "red") +
+  scale_x_log10("log10(TTP)",
+                breaks = c(1,5,10,15,25),
+                labels = c(1,5,10,15,25)) +
+  theme_bw()
+```
+
+## Simulated $n_k$ = 30
+
+```{r}
+# let's look at the reference group and compare it against the observed values
+##################################################
+# Random Intercept Model
+##################################################
+t30 <- temp2 %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", log10(25), yij_censored)) %>% 
+  group_by(sim_id, week = round(week)) %>% 
+  summarize(median = median(yij_censored, na.rm = TRUE),
+            p.975 = quantile(yij_censored, probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(yij_censored, probs = 0.025, na.rm = TRUE)) %>% # simulation specific medians
+  group_by(week) %>% 
+  mutate(median.p.975 = quantile(median, probs = 0.975, na.rm = TRUE),
+         median.p.025 = quantile(median, probs = 0.025, na.rm = TRUE),
+         p.975.975 = quantile(p.975, probs = 0.975, na.rm = TRUE),
+         p.975.025 = quantile(p.975, probs = 0.025, na.rm = TRUE),
+         p.025.025 = quantile(p.025, probs = 0.025, na.rm = TRUE),
+         p.025.975 = quantile(p.025, probs = 0.975, na.rm = TRUE))
+
+t30_neg <- temp2 %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(week = round(week), sim_id) %>% 
+  summarise(prop_neg = mean(is.na(yij_censored))) %>% 
+  group_by(week) %>% 
+  summarise(prop.neg.975 = quantile(prop_neg, probs = 0.975, na.rm = TRUE),
+            prop.neg.025 = quantile(prop_neg, probs = 0.025, na.rm = TRUE))
+
+##################################################
+# Random Intercept, Slope Model
+##################################################
+t30_rs <- temp2_rs %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", log10(25), yij_censored)) %>% 
+  group_by(sim_id, week = round(week)) %>% 
+  summarize(median = median(yij_censored, na.rm = TRUE),
+            p.975 = quantile(yij_censored, probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(yij_censored, probs = 0.025, na.rm = TRUE)) %>% # simulation specific medians
+  group_by(week) %>% 
+  mutate(median.p.975 = quantile(median, probs = 0.975, na.rm = TRUE),
+         median.p.025 = quantile(median, probs = 0.025, na.rm = TRUE),
+         p.975.975 = quantile(p.975, probs = 0.975, na.rm = TRUE),
+         p.975.025 = quantile(p.975, probs = 0.025, na.rm = TRUE),
+         p.025.025 = quantile(p.025, probs = 0.025, na.rm = TRUE),
+         p.025.975 = quantile(p.025, probs = 0.975, na.rm = TRUE))
+
+t30_neg_rs <- temp2_rs %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(week = round(week), sim_id) %>% 
+  summarise(prop_neg = mean(is.na(yij_censored))) %>% 
+  group_by(week) %>% 
+  summarise(prop.neg.975 = quantile(prop_neg, probs = 0.975, na.rm = TRUE),
+            prop.neg.025 = quantile(prop_neg, probs = 0.025, na.rm = TRUE))
+```
+
+```{r lineplots_observed-values_30nk-sims, fig.height = 8, fig.width=12}
+##################################################
+# Random Intercept Model
+##################################################
+p1 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  # mutate(dtp = ifelse(censored_25 == "right", log10(25), dtp)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp_25), na.rm = TRUE),
+            p.975 = quantile(log10(dtp_25), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp_25), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue") + 
+  geom_line(aes(y = p.025), col = "blue") + 
+  geom_ribbon(aes(x = week, ymin = median.p.025, ymax = median.p.975, group = 1), 
+              data = t30, 
+              fill = "red",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.025.025, ymax = p.025.975, group = 1), 
+              data = t30, 
+              fill = "blue",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.975.025, ymax = p.975.975, group = 1), 
+              data = t30, 
+              fill = "blue",
+              alpha = 0.3) +
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,2)) + 
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "Limit of detection = 25, N_k = 30")
+
+p2 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>%
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot() + 
+  geom_point(aes(x = week, y = prop_neg)) + 
+  geom_line(aes(x = week, y = prop_neg)) + 
+  geom_ribbon(data = t30_neg,
+              aes(x = week, ymin = prop.neg.025, ymax = prop.neg.975),
+              fill = "darkgray",
+              alpha = 0.3) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+##################################################
+# Random Intercept, Slope Model
+##################################################
+p1_rs <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  # mutate(dtp = ifelse(censored_25 == "right", NA, dtp)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp_25), na.rm = TRUE),
+            p.975 = quantile(log10(dtp_25), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp_25), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue") + 
+  geom_line(aes(y = p.025), col = "blue") + 
+  geom_ribbon(aes(x = week, ymin = median.p.025, ymax = median.p.975, group = 1), 
+              data = t30_rs, 
+              fill = "red",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.025.025, ymax = p.025.975, group = 1), 
+              data = t30_rs, 
+              fill = "blue",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.975.025, ymax = p.975.975, group = 1), 
+              data = t30_rs, 
+              fill = "blue",
+              alpha = 0.3) +
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,2)) + 
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "Limit of detection = 25, N_k = 30")
+
+p2_rs <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot() + 
+  geom_point(aes(x = week, y = prop_neg)) + 
+  geom_line(aes(x = week, y = prop_neg)) + 
+  geom_ribbon(data = t30_neg_rs,
+              aes(x = week, ymin = prop.neg.025, ymax = prop.neg.975),
+              fill = "darkgray",
+              alpha = 0.3) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+gridExtra::grid.arrange(p1, p1_rs, p2, p2_rs,
+                        ncol = 2,
+                        heights = c(2,1))
+```
+
+#### Density Plots
+
+```{r density-plot_pred-v-observed-weekly_30, fig.width=8, fig.height=8,fig.cap="The observed (solid line) versus predicted (dashed line) values of log10(TTP) censored at 25 days by week since randomization. Censored values are marked as log10(25) and included for visualization at the far right of the plot."}
+
+df_analysis %>% 
+  ggplot(aes(x = dtp_25)) + 
+  facet_wrap(~round(weeks),
+             scales = "free") + 
+  geom_density() + 
+  geom_density(data = filter(temp2, arm == 1, sim_id == 2),
+               aes(x = 10^yij_censored),
+               lty = 2,
+               col = "blue") + 
+  geom_density(data = filter(temp2_rs, arm == 1, sim_id == 2),
+               aes(x = 10^yij_censored),
+               lty = 3,
+               col = "red") +
+  scale_x_log10("log10(TTP)",
+                breaks = c(1,5,10,15,25),
+                labels = c(1,5,10,15,25)) +
+  theme_bw()
+```
+
+## Simulated $n_k$ = 40
+
+```{r}
+# let's look at the reference group and compare it against the observed values
+##################################################
+# Random Intercept Model
+##################################################
+t40 <- temp3 %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(sim_id, week = round(week)) %>% 
+  summarize(median = median(yij_censored, na.rm = TRUE),
+            p.975 = quantile(yij_censored, probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(yij_censored, probs = 0.025, na.rm = TRUE)) %>% # simulation specific medians
+  group_by(week) %>% 
+  mutate(median.p.975 = quantile(median, probs = 0.975, na.rm = TRUE),
+         median.p.025 = quantile(median, probs = 0.025, na.rm = TRUE),
+         p.975.975 = quantile(p.975, probs = 0.975, na.rm = TRUE),
+         p.975.025 = quantile(p.975, probs = 0.025, na.rm = TRUE),
+         p.025.025 = quantile(p.025, probs = 0.025, na.rm = TRUE),
+         p.025.975 = quantile(p.025, probs = 0.975, na.rm = TRUE))
+
+t40_neg <- temp3 %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(week = round(week), sim_id) %>% 
+  summarise(prop_neg = mean(is.na(yij_censored))) %>% 
+  group_by(week) %>% 
+  summarise(prop.neg.975 = quantile(prop_neg, probs = 0.975, na.rm = TRUE),
+            prop.neg.025 = quantile(prop_neg, probs = 0.025, na.rm = TRUE))
+
+##################################################
+# Random Intercept, Slope Model
+##################################################
+t40_rs <- temp3_rs %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(sim_id, week = round(week)) %>% 
+  summarize(median = median(yij_censored, na.rm = TRUE),
+            p.975 = quantile(yij_censored, probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(yij_censored, probs = 0.025, na.rm = TRUE)) %>% # simulation specific medians
+  group_by(week) %>% 
+  mutate(median.p.975 = quantile(median, probs = 0.975, na.rm = TRUE),
+         median.p.025 = quantile(median, probs = 0.025, na.rm = TRUE),
+         p.975.975 = quantile(p.975, probs = 0.975, na.rm = TRUE),
+         p.975.025 = quantile(p.975, probs = 0.025, na.rm = TRUE),
+         p.025.025 = quantile(p.025, probs = 0.025, na.rm = TRUE),
+         p.025.975 = quantile(p.025, probs = 0.975, na.rm = TRUE))
+
+t40_neg_rs <- temp3_rs %>% 
+  filter(arm == 1) %>% 
+  mutate(yij_censored = ifelse(censored == "right", NA, yij_censored)) %>% 
+  group_by(week = round(week), sim_id) %>% 
+  summarise(prop_neg = mean(is.na(yij_censored))) %>% 
+  group_by(week) %>% 
+  summarise(prop.neg.975 = quantile(prop_neg, probs = 0.975, na.rm = TRUE),
+            prop.neg.025 = quantile(prop_neg, probs = 0.025, na.rm = TRUE))
+```
+
+```{r lineplots_observed-values_40nk-sims, fig.height = 8, fig.width=12}
+##################################################
+# Random Intercept Model
+##################################################
+p1 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp), na.rm = TRUE),
+            p.975 = quantile(log10(dtp), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue") + 
+  geom_line(aes(y = p.025), col = "blue") + 
+  geom_ribbon(aes(x = week, ymin = median.p.025, ymax = median.p.975, group = 1), 
+              data = t40, 
+              fill = "red",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.025.025, ymax = p.025.975, group = 1), 
+              data = t40, 
+              fill = "blue",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.975.025, ymax = p.975.975, group = 1), 
+              data = t40, 
+              fill = "blue",
+              alpha = 0.3) +
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,2)) + 
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "Limit of detection = 25, N_k = 40")
+
+p2 <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot() + 
+  geom_point(aes(x = week, y = prop_neg)) + 
+  geom_line(aes(x = week, y = prop_neg)) + 
+  geom_ribbon(data = t40_neg,
+              aes(x = week, ymin = prop.neg.025, ymax = prop.neg.975),
+              fill = "darkgray",
+              alpha = 0.3) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+##################################################
+# Random Intercept, Slope Model
+##################################################
+p1_rs <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarize(median = median(log10(dtp), na.rm = TRUE),
+            p.975 = quantile(log10(dtp), probs = 0.975, na.rm = TRUE),
+            p.025 = quantile(log10(dtp), probs = 0.025, na.rm = TRUE)) %>% 
+  ggplot(aes(x = week)) + 
+  geom_line(aes(y = median), col = "red") + 
+  geom_line(aes(y = p.975), col = "blue") + 
+  geom_line(aes(y = p.025), col = "blue") + 
+  geom_ribbon(aes(x = week, ymin = median.p.025, ymax = median.p.975, group = 1), 
+              data = t40_rs, 
+              fill = "red",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.025.025, ymax = p.025.975, group = 1), 
+              data = t40_rs, 
+              fill = "blue",
+              alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = p.975.025, ymax = p.975.975, group = 1), 
+              data = t40_rs, 
+              fill = "blue",
+              alpha = 0.3) +
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,2)) + 
+  labs(x = "Weeks since randomization",
+       y = "log10(DTP)") + 
+  ggtitle("Observed values in the HRZE treatment group.",
+          subtitle = "Limit of detection = 25, N_k = 40")
+
+p2_rs <- df_analysis %>% 
+  filter(alloc == 1) %>% 
+  mutate(dtp = ifelse(censored_25 == "right", NA, dtp_25)) %>% 
+  group_by(week = round(weeks)) %>% 
+  summarise(prop_neg = mean(is.na(dtp))) %>% 
+  ggplot() + 
+  geom_point(aes(x = week, y = prop_neg)) + 
+  geom_line(aes(x = week, y = prop_neg)) + 
+  geom_ribbon(data = t40_neg_rs,
+              aes(x = week, ymin = prop.neg.025, ymax = prop.neg.975),
+              fill = "darkgray",
+              alpha = 0.3) + 
+  theme_bw() + 
+  coord_cartesian(ylim = c(0,1)) + 
+  labs(x = "Weeks since randomization",
+       y = "Proportion of Negative Samples")
+
+gridExtra::grid.arrange(p1, p1_rs, p2, p2_rs,
+                        ncol = 2,
+                        heights = c(2,1))
+```
+
+#### Density Plots
+
+```{r density-plot_pred-v-observed-weekly_40, fig.width=8, fig.height=8,fig.cap="The observed (solid line) versus predicted (dashed line) values of log10(TTP) censored at 25 days by week since randomization. Censored values are marked as log10(25) and included for visualization at the far right of the plot."}
+
+df_analysis %>% 
+  ggplot(aes(x = dtp_25)) + 
+  facet_wrap(~round(weeks),
+             scales = "free") + 
+  geom_density() + 
+  geom_density(data = filter(temp3, arm == 1, sim_id == 2),
+               aes(x = 10^yij_censored),
+               lty = 2,
+               col = "blue") + 
+  geom_density(data = filter(temp3_rs, arm == 1, sim_id == 2),
+               aes(x = 10^yij_censored),
+               lty = 3,
+               col = "red") +
+  scale_x_log10("log10(TTP)",
+                breaks = c(1,5,10,15,25),
+                labels = c(1,5,10,15,25)) +
+  theme_bw()
+```
+
