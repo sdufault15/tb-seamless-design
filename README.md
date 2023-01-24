@@ -46,6 +46,10 @@
 + `simulation-study-results.Rmd` is the larger comprehensive file containing all analysis results from all simulated datasets
 + `simulation-overview.Rmd` [NEEDS UPDATING] should contain an ADEMP map of the project
 
+### graphs
+
++ `fig-1_`
+
 ## Files excluded from repository
 
 ### data
