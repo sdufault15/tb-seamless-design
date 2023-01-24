@@ -207,7 +207,10 @@ r2a <- temp_mixed %>%
   scale_color_manual(values = c("red", "orange", "green")) +
   ggpubr::theme_pubr() +
   coord_cartesian(ylim = c(0,1)) +
-  theme(legend.position = "right") +
+  theme(legend.position = "right",
+        strip.text = element_text(size = 24),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 22)) + 
   ylab("P(stopped)") +
   scale_x_continuous("TTP slope (%) relative to control",
                      breaks = c(0,0.2,0.4),
@@ -293,8 +296,8 @@ ggsave(plot = r2a,
        filename = here("graphs", "simulation-results", 
                        paste0(Sys.Date(), "_point-plot-stop-for-futility_presentation-2.png")),
        units = "in",
-       height = 4,
-       width = 10,
+       height = 5,
+       width = 11,
        device = "png")
 
 ggsave(plot = r2c, 
@@ -304,3 +307,213 @@ ggsave(plot = r2c,
        height = 5,
        width = 10,
        device = "png")
+
+
+#########################
+# All minimal
+#########################
+
+# Situation 2, S(52) = .95
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk30_4mo-duration.RData"))
+s95.sit2.30 <- s95.situation2.results
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk40_4mo-duration.RData"))
+s95.sit2.40 <- s95.situation2.results
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk60_4mo-duration.RData"))
+s95.sit2.60 <- s95.situation2.results
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk80_4mo-duration.RData"))
+s95.sit2.80 <- s95.situation2.results
+
+# Situation 2
+df_30_2 <- full_join(simlevel_ttp30, 
+                   s95.sit2.30) %>% 
+  mutate(nk = 30)
+df_40_2 <- full_join(simlevel_ttp40, 
+                   s95.sit2.40) %>% 
+  mutate(nk = 40)
+df_60_2 <- full_join(simlevel_ttp60, 
+                   s95.sit2.60) %>% 
+  mutate(nk = 60)
+df_80_2 <- full_join(simlevel_ttp80, 
+                   s95.sit2.80) %>% 
+  mutate(nk = 80)
+
+temp_mixed_2 <- bind_rows(df_30_2,
+                          df_40_2,
+                          df_60_2,
+                          df_80_2) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(#regimen == 1 ~ "ref",
+    (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ .1,
+    ttp.condition == "even" & regimen == 3 ~ .2,
+    ttp.condition == "even" & regimen == 4 ~ .3,
+    (ttp.condition == "even" & regimen == 5) | 
+      (ttp.condition == "highlow" & regimen == 5) ~ .4,
+    ttp.condition == "highlow" & regimen == 2 ~ -.1,
+    (ttp.condition == "highlow" & regimen == 4) | 
+      (ttp.condition == "high" & regimen == 2) ~ .35,
+    ttp.condition == "high" & regimen == 3 ~ .37,
+    ttp.condition == "high" & regimen == 4 ~ .39,
+    ttp.condition == "high" & regimen == 5 ~ .41),
+    .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "5%",
+                                    TRUE ~ "2.5%"),
+         .before = 2) %>% 
+  pivot_longer(cols = 6:8,
+               names_to = "threshold",
+               values_to = "probability") %>% 
+  mutate(`Relapse rate` = factor(`Relapse rate`, levels = c("10%", "5%", "2.5%"))) 
+
+temp_mixed_2 %>% 
+  filter(threshold == "P(confidence < 0.8 OR >= 2 relapse)",
+         !is.na(`TTP Slope`)) %>% 
+  ggplot() + 
+  facet_wrap(~nk, nrow = 1) +
+  geom_polygon(aes(x = xx, y = yy),
+               data = poly_reject,
+               fill = "red",
+               alpha = 0.3) +
+  geom_polygon(aes(x = xx, y = yy),
+               data = poly_accept,
+               fill = "green",
+               alpha = 0.3) +
+  geom_point(aes(x = `TTP Slope`, col = `Relapse rate`, shape = `Relapse rate`, y = probability),
+             alpha = 0.6,
+             size = 3) +
+  scale_color_manual(values = c("green")) +
+  scale_shape_manual(values = 15) +
+  ggpubr::theme_pubr() +
+  coord_cartesian(ylim = c(0,1)) +
+  theme(legend.position = "right",
+        strip.text = element_text(size = 24),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 22)) + 
+  ylab("P(stopped)") +
+  scale_x_continuous("TTP slope (%) relative to control",
+                     breaks = c(0,0.2,0.4),
+                     labels = c(0,0.2,0.4)*100) +
+  ggtitle("P(confidence < 0.8 OR >= 2 relapse)")
+
+temp_mixed_2 %>% 
+  filter(threshold == "P(confidence < 0.8 OR >= 2 relapse)",
+         nk == 30,
+         !is.na(`TTP Slope`)) %>% 
+  group_by(`TTP Slope`) %>% 
+  mutate(probability = mean(probability)) %>% 
+  ggplot() + 
+  geom_segment(aes(x = 0, xend = probability, 
+                   y = `TTP Slope`, yend = `TTP Slope`),
+               col = "darkgray",
+               size = 1,
+               alpha = 0.8) +
+  geom_point(aes(y = `TTP Slope`, x = probability),
+             pch = 15,
+             size = 3,
+             col = "green") +
+  xlab("Risk of stopping desirable regimen") +
+  scale_y_continuous("TTP slope (%) relative to control",
+                     breaks = c(0,0.1,0.2,0.3,0.4),
+                     labels = c(0,0.1,0.2,0.3,0.4)*100) +
+  ggtitle("P(confidence < 0.8 OR >= 2 relapse)",
+          subtitle = "All minimal relapse rates (same as control)") +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "right",
+        strip.text = element_text(size = 24),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 22)) +
+  geom_vline(xintercept = 0.2, 
+             lty = 2) +
+  geom_hline(yintercept = 0, 
+             lty = 2)
+  
+#########################
+# All desirable
+#########################
+
+# Situation 3, S(52) = .95
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk30_4mo-duration.RData"))
+s95.sit3.30 <- s95.situation3.results
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk40_4mo-duration.RData"))
+s95.sit3.40 <- s95.situation3.results
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk60_4mo-duration.RData"))
+s95.sit3.60 <- s95.situation3.results
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk80_4mo-duration.RData"))
+s95.sit3.80 <- s95.situation3.results
+
+# Situation 3
+df_30_3 <- full_join(simlevel_ttp30, 
+                     s95.sit3.30) %>% 
+  mutate(nk = 30)
+df_40_3 <- full_join(simlevel_ttp40, 
+                     s95.sit3.40) %>% 
+  mutate(nk = 40)
+df_60_3 <- full_join(simlevel_ttp60, 
+                     s95.sit3.60) %>% 
+  mutate(nk = 60)
+df_80_3 <- full_join(simlevel_ttp80, 
+                     s95.sit3.80) %>% 
+  mutate(nk = 80)
+
+temp_mixed_3 <- bind_rows(df_30_3,
+                          df_40_3,
+                          df_60_3,
+                          df_80_3) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(#regimen == 1 ~ "ref",
+    (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ .1,
+    ttp.condition == "even" & regimen == 3 ~ .2,
+    ttp.condition == "even" & regimen == 4 ~ .3,
+    (ttp.condition == "even" & regimen == 5) | 
+      (ttp.condition == "highlow" & regimen == 5) ~ .4,
+    ttp.condition == "highlow" & regimen == 2 ~ -.1,
+    (ttp.condition == "highlow" & regimen == 4) | 
+      (ttp.condition == "high" & regimen == 2) ~ .35,
+    ttp.condition == "high" & regimen == 3 ~ .37,
+    ttp.condition == "high" & regimen == 4 ~ .39,
+    ttp.condition == "high" & regimen == 5 ~ .41),
+    .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "5%",
+                                    TRUE ~ "2.5%"),
+         .before = 2) %>% 
+  pivot_longer(cols = 6:8,
+               names_to = "threshold",
+               values_to = "probability") %>% 
+  mutate(`Relapse rate` = factor(`Relapse rate`, levels = c("10%", "5%", "2.5%"))) 
+
+temp_mixed_3 %>% 
+  filter(threshold == "P(confidence < 0.8 OR >= 2 relapse)",
+         nk == 30,
+         !is.na(`TTP Slope`)) %>% 
+  group_by(`TTP Slope`) %>% 
+  mutate(probability = mean(probability)) %>% 
+  ggplot() + 
+  geom_segment(aes(x = 0, xend = probability, 
+                   y = `TTP Slope`, yend = `TTP Slope`),
+               col = "darkgray",
+               size = 1,
+               alpha = 0.8) +
+  geom_point(aes(y = `TTP Slope`, x = probability),
+             pch = 15,
+             size = 3,
+             col = "green") +
+  xlab("Risk of stopping desirable regimen") +
+  scale_y_continuous("TTP slope (%) relative to control",
+                     breaks = c(0,0.1,0.2,0.3,0.4),
+                     labels = c(0,0.1,0.2,0.3,0.4)*100) +
+  ggtitle("P(confidence < 0.8 OR >= 2 relapse)",
+          subtitle = "All desirable relapse rates") +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "right",
+        strip.text = element_text(size = 24),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 22)) +
+  geom_vline(xintercept = 0.2, 
+             lty = 2) +
+  geom_hline(yintercept = 0, 
+             lty = 2)
+
