@@ -293,6 +293,12 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
        height = 6,
        width = 5.5,
        units = "in")
+
+ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds.eps"),
+       device = "eps",
+       height = 6,
+       width = 5.75,
+       units = "in")
 ```
 
 ```{r}
@@ -388,6 +394,14 @@ d_full %>%
   # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom")
+```
+
+```{r eval=false}
+ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions.eps"),
+       device = "eps",
+       height = 6,
+       width = 9,
+       units = "in")
 ```
 
 ```{r areaplot-tpp-decisions, fig.width = 10, fig.height = 6, fig.cap = "When theta_lrv = 0, theta_TV = 20, tau_LRV = tau_TV = 0.025.", eval = FALSE}
@@ -828,6 +842,12 @@ p1 + p2 + p3 +
 ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", 
                        paste0(Sys.Date(), "_density-plot_prob-steepest_top-2.png")),
        device = "png",
+       width = 10,
+       height = 5,
+       units = "in")
+
+ggsave(filename = here("graphs", "submission", "fig-05_density-plot_prob-steepest_top-2.tiff"),
+       device = "tiff",
        width = 10,
        height = 5,
        units = "in")
