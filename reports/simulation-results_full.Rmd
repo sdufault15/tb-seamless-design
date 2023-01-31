@@ -301,6 +301,48 @@ ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds.eps"),
        units = "in")
 ```
 
+```{r eval = FALSE}
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
+            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
+            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
+               names_to = "threshold",
+               values_to = "prop_stopped") %>% 
+  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
+  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Unfavorable Outcome Rate",
+                          regimen == 4 ~ "Minimal: 5% Unfavorable Outcome Rate",
+                          regimen == 5 ~ "Desirable: 2.5% Unfavorable Outcome Rate"),
+         threshold = str_remove(threshold, "prop_stopped_")) %>% 
+  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Unfavorable Outcome Rate","Minimal: 5% Unfavorable Outcome Rate","Desirable: 2.5% Unfavorable Outcome Rate"))) %>% 
+  ggplot(aes(x = as.factor(nk),
+             y = threshold, 
+             # shape = threshold, 
+             fill = prop_stopped)) + 
+  ggtitle("Dufault Fig 3. (Top)") +
+  facet_wrap(~rate, ncol = 1) + 
+  geom_tile() + 
+  geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
+            col = "white") +
+  ggpubr::theme_pubr() + 
+  scale_y_discrete("Unfavorable outcome threshold") +
+  scale_x_discrete(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) + 
+  scale_fill_viridis_c(TeX("Pr(No. observed unfavorable outcomes $\\geq$ threshold)")) + 
+  theme(legend.position = "bottom")
+
+ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds_annotated.eps"),
+       device = "eps",
+       dpi = 600,
+       height = 6,
+       width = 5.75,
+       units = "in")
+```
+
 ```{r}
 bind_rows(mutate(s95.sit1.30, nk = 30),
           mutate(s95.sit1.40, nk = 40),
@@ -399,6 +441,31 @@ d_full %>%
 ```{r eval=false}
 ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions.eps"),
        device = "eps",
+       height = 6,
+       width = 9,
+       units = "in")
+```
+
+```{r eval = FALSE}
+d_full %>% 
+  ggplot(aes(x = nk, y = Probability, fill = Decision)) + 
+  geom_bar(stat = "identity") + 
+  facet_wrap(~Regimen, nrow = 1) +
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  ggtitle("Dufault Fig. 4 (Top)") +
+  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom")
+
+ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_annotated.eps"),
+       device = "eps",
+       dpi = 600,
        height = 6,
        width = 9,
        units = "in")
@@ -848,6 +915,17 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
 
 ggsave(filename = here("graphs", "submission", "fig-05_density-plot_prob-steepest_top-2.tiff"),
        device = "tiff",
+       width = 10,
+       height = 5,
+       units = "in")
+
+p1 + p2 + p3 + 
+  plot_annotation(tag_levels = "A",
+                  title = "Dufault Fig. 5 (Top)") 
+
+ggsave(filename = here("graphs", "submission", "fig-05_density-plot_prob-steepest_top-2.tiff"),
+       device = "tiff",
+       dpi = 600,
        width = 10,
        height = 5,
        units = "in")
@@ -1872,6 +1950,25 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
        width = 12, 
        units = "in",
        device = "png")
+
+ggsave(filename = here("graphs", "submission",
+                       "fig-06_venn-diagram_all-together_sub-optimal-3-nk30.tiff"),
+       height = 5,
+       width = 12, 
+       units = "in",
+       device = "tiff")
+
+p1 + p2 + p3 + 
+  plot_annotation(tag_levels = "A",
+                  title = "Dufault Fig. 6 (Top)")
+
+ggsave(filename = here("graphs", "submission",
+                       "fig-06_venn-diagram_all-together_sub-optimal-3-nk30_annotated.tiff"),
+       height = 5,
+       dpi = 600,
+       width = 12, 
+       units = "in",
+       device = "tiff")
 ```
 
 ### Desirable regimens
@@ -2532,3 +2629,15 @@ ggsave(filename = here("graphs", "submission", "fig-02_panel-plot-frequentist-su
        units = "in")
 ```
 
+```{r eval = FALSE}
+p2 + p1 + p3 + 
+  plot_annotation(tag_levels = "A",
+                  title = "Dufault Fig. 2 (Top)") 
+
+ggsave(filename = here("graphs", "submission", "fig-02_panel-plot-frequentist-summaries_annotated.eps"),
+       dpi = 600,
+       device = "eps",
+       width = 13,
+       height = 5,
+       units = "in")
+```
