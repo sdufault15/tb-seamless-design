@@ -1,15 +1,14 @@
 decision_function <- function(mcmc_list, nk, theta_lrv, theta_tv, tau_lrv, tau_tv){
   out <- map_dfr(mcmc_list,  
                  # Convert to % relative to control
-                 ~mutate(.x, `Regimen 1` = ((arm2/arm1) - 1)*100,
-                         `Regimen 2` = ((arm3/arm1) - 1)*100,
-                         `Regimen 3` = ((arm4/arm1) - 1)*100,
-                         `Regimen 4` = ((arm5/arm1) - 1)*100) %>% 
-                   dplyr::select(`Regimen 1`:`Regimen 4`) %>% 
-                   pivot_longer(cols = 1:4,
-                                names_to = "Regimen",
+                 ~mutate(.x, 
+                         `Allocation 2` = ((alloc2/alloc1) - 1)*100,
+                         `Allocation 3` = ((alloc3/alloc1) - 1)*100,) %>% 
+                   dplyr::select(`Allocation 2`:`Allocation 3`) %>% 
+                   pivot_longer(cols = 1:2,
+                                names_to = "Allocation",
                                 values_to = "Slope, %") %>% 
-                   group_by(Regimen) %>% 
+                   group_by(Allocation) %>% 
                    summarise(CI.025 = quantile(`Slope, %`, probs = tau_lrv),
                              CI.975 = quantile(`Slope, %`, probs = 1-tau_tv)) %>% 
                    mutate(Decision = case_when(CI.975 < theta_tv ~ "NO-GO", # If it doesn't have hope of reaching target value, it's stopped
