@@ -32,13 +32,22 @@
 
 ### munge
 
-+ `0*_nk-30_*.R` these files take the sample size of 30 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. *These scripts correspond to a duration-randomized design such that 6 participants per regimen are assigned to 8, 10, 12, 14, or 16 weeks of treatment. Survival outcomes are specified with respect to particular durations.*  
-+ `2*_nk-30_*_fixed-duration.R` these files take the sample size of 30 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. *These scripts correspond to a fixed 4 month duration of each novel treatment.* 
++ `00_run-file.R` - This file sets up the parameters for the simulation study. 
+  + `01_simulate-ttp-data.R` - Simulates the time-to-positivity data 
+  + `02_add-fixed-effects.R` - Adds the fixed effects including the simulated enrollment day such that 10 participants are enrolled per week
+  + `03_simulate-survival-outcomes.R` - Simulates the survival outcomes for each simulated TTP dataset. The same TTP data is replicated across the various survival settings, because we have not assumed TTP directly affects survival.   
+
++ `1*_run-analysis-ttp.R` - The Bayesian analysis is computationally expensive and therefore management of the analysis is split across 10 files such that 100 simulated datasets for each TTP setting and sampel size are analyzed at one time. Therefore, file `10_run-analysis-ttp.R` corresponds to the first 100 simulated datasets and file `19_run-analysis-ttp.R` corresponds to the 900th-1000th simulated datasets.
+
++ `20_perform-ttp-analysis.R` - The previous files "manage" the distribution of simulated datasets such that the computational cost can be distributed. This file contains the actual script for applying the `brms` model to the simulated dataset. 
+
+<!-- + `0*_nk-30_*.R` these files take the sample size of 30 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. *These scripts correspond to a duration-randomized design such that 6 participants per regimen are assigned to 8, 10, 12, 14, or 16 weeks of treatment. Survival outcomes are specified with respect to particular durations.* 
++ `2*_nk-30_*_fixed-duration.R` these files take the sample size of 30 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. *These scripts correspond to a fixed 4 month duration of each novel treatment.*
 + `3*` these files simulate TTP and survival outcomes for sample sizes of 60 and 80 per regimen. These scripts correspond to a fixed 4 month duration of each novel treatment.
 + `4*` these files take the sample size of 40 and add simulated survival data to the already existing log10(TTP) simulated data at this sample size. These scripts correspond to a fixed 4 month duration of each novel treatment.
 + `80_generate-pointplots_prob-stopping.R` [TEMPORARY] file for generating point plot with probability of stopping versus true TTP and true relapse rate
 + `81_generate-roc-plots_stopping.R` [TEMPORARY] file for generating pseudo-ROC plots with operating characteristics when a threshold has been set on the observed and true "futility" criteria.
-+ `99_saving-smaller-bayes-objects.R` file for taking some of the earlier model results (quite big) and extracting the smaller components needed for analysis.
++ `99_saving-smaller-bayes-objects.R` file for taking some of the earlier model results (quite big) and extracting the smaller components needed for analysis.-->
 
 ### reports
 
@@ -47,8 +56,6 @@
 + `simulation-overview.Rmd` [NEEDS UPDATING] should contain an ADEMP map of the project
 
 ### graphs
-
-+ `fig-1_`
 
 ## Files excluded from repository
 
