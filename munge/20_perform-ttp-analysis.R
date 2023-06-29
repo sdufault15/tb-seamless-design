@@ -40,7 +40,7 @@ rm(file_interest,files)
 # A list of length nsims, where each dataset is [sum(nk*regimen) over all nk] x [9 variables]
 df_sims_nk <- df_sims_no_winners_fe[sims] %>% 
   map(~.x %>% # Across the chosen number of simulations
-        mutate(regimen = as.factor(regimen),
+        mutate(arm = as.factor(regimen),
                nk = as.factor(nk)) %>% 
         # Splits data by the nk, resulting in a list of 5 different datasets for 20, 30, 40, 60, 80 
         group_by(nk) %>% 
@@ -73,7 +73,7 @@ rm(df_sims_nk, mcmc_mods_no_winners, summary_mods_no_winners, df_sims_no_winners
 
 df_sims_nk <- df_sims_one_winner_fe[sims] %>% # Across the chosen number of simulated datasets
   map(~.x %>% # Across the chosen number of simulations
-        mutate(regimen = as.factor(regimen),
+        mutate(arm = as.factor(regimen),
                nk = as.factor(nk)) %>% 
         # Splits data by the nk, resulting in a list of 5 different datasets for 20, 30, 40, 60, 80 
         group_by(nk) %>% 
@@ -107,7 +107,7 @@ rm(df_sims_nk, mcmc_mods_one_winner, summary_mods_one_winner, df_sims_one_winner
 # A list of length nsims, where each dataset is [sum(nk*regimen) over all nk] x [9 variables]
 df_sims_nk <- df_sims_two_winners_fe[sims] %>% 
   map(~.x %>% # Across the chosen number of simulations
-        mutate(regimen = as.factor(regimen),
+        mutate(arm = as.factor(regimen),
                nk = as.factor(nk)) %>% 
         # Splits data by the nk, resulting in a list of 5 different datasets for 20, 30, 40, 60, 80 
         group_by(nk) %>% 
@@ -140,7 +140,7 @@ rm(df_sims_nk, mcmc_mods_two_winners, summary_mods_two_winners, df_sims_two_winn
 # A list of length nsims, where each dataset is [sum(nk*regimen) over all nk] x [9 variables]
 df_sims_nk <- df_sims_four_winners_fe[sims] %>% 
   map(~.x %>% # Across the chosen number of simulations
-        mutate(regimen = as.factor(regimen),
+        mutate(arm = as.factor(regimen),
                nk = as.factor(nk)) %>% 
         # Splits data by the nk, resulting in a list of 5 different datasets for 20, 30, 40, 60, 80 
         group_by(nk) %>% 
