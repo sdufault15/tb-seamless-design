@@ -32,6 +32,13 @@
 
 ### munge
 
+Note: I had to run the following in order to use the `cmdstanr` backend:
+
+```
+# we recommend running this is a fresh R session or restarting your current session
+install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+```
+
 + `00_run-file.R` - This file sets up the parameters for the simulation study. 
   + `01_simulate-ttp-data.R` - Simulates the time-to-positivity data 
   + `02_add-fixed-effects.R` - Adds the fixed effects including the simulated enrollment day such that 10 participants are enrolled per week
