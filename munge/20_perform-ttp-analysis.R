@@ -7,7 +7,7 @@ library(purrr)
 library(brms)
 library(parallelly)
 library(cmdstanr)
-set_cmdstan_path(path = "/home/sdufault/.cmdstan/cmdstan-2.32.2") # attempt 2
+# set_cmdstan_path(path = "/home/sdufault/.cmdstan/cmdstan-2.32.2") # attempt 2
 source(here("lib","df_extract-mcmc-slopes-function.R"))
 
 library(rstan)
@@ -38,11 +38,12 @@ rm(df_sims_no_winners_fe)
 mods_no_winners <- map(df_sims_nk, # across the chosen number of simulations
                        ~.x %>% # across the nk-specific datasets
                          map(~brm(model, # run the model
-                              data = .x,
-                              backend = "cmdstanr", # attempt to improve convergence speed
-                              save_pars=save_pars(group=FALSE), # attempt to decrease file size 
-                              normalize = FALSE, # attempt to improve speed of convergence (https://discourse.mc-stan.org/t/faster-convergence/21532)
-                              prior = priors)))
+                                  data = .x,
+                                  inits = 0,
+                                  backend = "cmdstanr", # attempt to improve convergence speed
+                                  save_pars=save_pars(group=FALSE), # attempt to decrease file size 
+                                  normalize = FALSE, # attempt to improve speed of convergence (https://discourse.mc-stan.org/t/faster-convergence/21532)
+                                  prior = priors)))
 rm(df_sims_nk)
 
 # Save the model results
