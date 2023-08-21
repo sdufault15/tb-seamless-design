@@ -59,7 +59,7 @@ install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOpt
 ### reports
 
 + `sample-study-design.Rmd` describes the set-up for the simulated datasets
-+ `simulation-study-results.Rmd` is the larger comprehensive file containing all analysis results from all simulated datasets
++ `simulation-results_full.Rmd` is the larger comprehensive file containing all analysis results from all simulated datasets
 + `simulation-overview.Rmd` [NEEDS UPDATING] should contain an ADEMP map of the project
 
 ### graphs
@@ -69,6 +69,7 @@ install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOpt
 ### data
 
 + `analyzed`
+  + `2022-03-07_sim-level-ttp-results_nk*_4mo-duration.RData` - contains log10(TTP) metric estimates for each arm for each setting
 + `bayes-generated`
 + `simulated-datasets`
 

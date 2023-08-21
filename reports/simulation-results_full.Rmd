@@ -90,7 +90,7 @@ p1 <- data.frame(Control = betas[1] + betas[2]*0:8,
                      labels = c(1:5)) +
   scale_linetype_discrete(labels = c(1:5)) +
   coord_cartesian(ylim = c(7,35)) + 
-  ggtitle("Even condition", subtitle = c("10%, 20%, 30%, 40%")) + 
+  ggtitle("1 Winner condition", subtitle = c("10%, 20%, 30%, 40%")) + 
   theme_bw()
 
 slopes_highlow <- c(-.1, .1, .35, .4)
@@ -118,7 +118,7 @@ p2 <- data.frame(Control = betas[1] + betas[2]*0:8,
                      labels = c(1:5)) +
   scale_linetype_discrete(labels = c(1:5)) +
   coord_cartesian(ylim = c(7,35)) + 
-  ggtitle("High-low condition", subtitle = c("-10%, 10%, 35%, 40%")) + 
+  ggtitle("2 Winners condition", subtitle = c("-10%, 10%, 35%, 40%")) + 
   theme_bw()
 
 slopes_high <- c(.35, .37, .39, .41)
@@ -146,7 +146,7 @@ p3 <- data.frame(Control = betas[1] + betas[2]*0:8,
                      labels = c(1:5)) +
   scale_linetype_discrete(labels = c(1:5)) +
   coord_cartesian(ylim = c(7,35)) + 
-  ggtitle("High condition", subtitle = c("35%, 37%, 39%, 41%")) + 
+  ggtitle("4 Winners condition", subtitle = c("35%, 37%, 39%, 41%")) + 
   theme_bw()
 
 ttp_fig <- gridExtra::grid.arrange(p0,p1,p2,p3)
@@ -174,6 +174,8 @@ ggsave(filename = here("graphs", "simulation-settings",
 
 ```{r relapse-data}
 # Situation 1, S(52) = .95
+load(here("data","analyzed","2023-08-16_s95-situation1-results_nk20_4mo-duration.RData"))
+s95.sit1.20 <- rename(s95.sit1.20, n_relapse_interim1 = n_relapses)
 load(here("data","analyzed","2022-03-07_s95-situation1-results_nk30_4mo-duration.RData"))
 s95.sit1.30 <- s95.situation1.results
 load(here("data","analyzed","2022-03-07_s95-situation1-results_nk40_4mo-duration.RData"))
@@ -185,166 +187,8 @@ s95.sit1.80 <- s95.situation1.results; rm(s95.situation1.results)
 ```
 
 ```{r fig-relapse-data, fig.width = 7, fig.height = 9}
-bind_rows(mutate(s95.sit1.30, nk = 30),
-          mutate(s95.sit1.40, nk = 40),
-          mutate(s95.sit1.60, nk = 60),
-          mutate(s95.sit1.80, nk = 80)) %>% 
-  group_by(nk, regimen) %>% 
-  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
-            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
-            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
-  ungroup() %>% 
-  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
-               names_to = "threshold",
-               values_to = "prop_stopped") %>% 
-  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
-  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Unfavorable Outcome Rate",
-                          regimen == 4 ~ "Minimal: 5% Unfavorable Outcome Rate",
-                          regimen == 5 ~ "Desirable: 2.5% Unfavorable Outcome Rate"),
-         threshold = str_remove(threshold, "prop_stopped_")) %>% 
-  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Unfavorable Outcome Rate","Minimal: 5% Unfavorable Outcome Rate","Desirable: 2.5% Unfavorable Outcome Rate"))) %>% 
-  ggplot(aes(x = prop_stopped,
-             y = nk, 
-             # shape = threshold, 
-             col = threshold)) + 
-  facet_wrap(~rate, ncol = 1) + 
-  scale_x_continuous(TeX("Pr(No. relapses $\\geq$ threshold)"),
-                     breaks = seq(0,1,by = 0.2),
-                     labels = seq(0,1,by = 0.2)) +
-  scale_y_continuous(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) +
-  scale_linetype_discrete("Unfavorable outcome threshold") +
-  scale_color_manual("Unfavorable outcome threshold", values = ucsf_col_pal) + 
-  geom_line(aes(lty = threshold),
-            size = 1) +
-  ggpubr::theme_pubr()
-
-bind_rows(mutate(s95.sit1.30, nk = 30),
-          mutate(s95.sit1.40, nk = 40),
-          mutate(s95.sit1.60, nk = 60),
-          mutate(s95.sit1.80, nk = 80)) %>% 
-  group_by(nk, regimen) %>% 
-  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
-            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
-            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
-  ungroup() %>% 
-  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
-               names_to = "threshold",
-               values_to = "prop_stopped") %>% 
-  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
-  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Unfavorable Outcome Rate",
-                          regimen == 4 ~ "Minimal: 5% Unfavorable Outcome Rate",
-                          regimen == 5 ~ "Desirable: 2.5% Unfavorable Outcome Rate"),
-         threshold = str_remove(threshold, "prop_stopped_")) %>% 
-  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Unfavorable Outcome Rate","Minimal: 5% Unfavorable Outcome Rate","Desirable: 2.5% Unfavorable Outcome Rate"))) %>% 
-  ggplot(aes(x = prop_stopped,
-             y = nk, 
-             # shape = threshold, 
-             col = threshold)) + 
-  facet_wrap(~rate, ncol = 1) + 
-  scale_x_continuous(TeX("Pr(No. relapses $\\geq$ threshold)"),
-                     breaks = seq(0,1,by = 0.2),
-                     labels = seq(0,1,by = 0.2)) +
-  scale_y_continuous(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) +
-  scale_linetype_discrete("Unfavorable outcome threshold") +
-  scale_color_manual("Unfavorable outcome threshold", values = ucsf_col_pal) + 
-  geom_point() + 
-  # geom_line(aes(lty = threshold),
-  #           size = 1) +
-  ggpubr::theme_pubr()
-
-bind_rows(mutate(s95.sit1.30, nk = 30),
-          mutate(s95.sit1.40, nk = 40),
-          mutate(s95.sit1.60, nk = 60),
-          mutate(s95.sit1.80, nk = 80)) %>% 
-  group_by(nk, regimen) %>% 
-  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
-            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
-            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
-  ungroup() %>% 
-  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
-               names_to = "threshold",
-               values_to = "prop_stopped") %>% 
-  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
-  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Unfavorable Outcome Rate",
-                          regimen == 4 ~ "Minimal: 5% Unfavorable Outcome Rate",
-                          regimen == 5 ~ "Desirable: 2.5% Unfavorable Outcome Rate"),
-         threshold = str_remove(threshold, "prop_stopped_")) %>% 
-  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Unfavorable Outcome Rate","Minimal: 5% Unfavorable Outcome Rate","Desirable: 2.5% Unfavorable Outcome Rate"))) %>% 
-  ggplot(aes(x = as.factor(nk),
-             y = threshold, 
-             # shape = threshold, 
-             fill = prop_stopped)) + 
-  facet_wrap(~rate, ncol = 1) + 
-  geom_tile() + 
-  geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
-            col = "white") +
-  ggpubr::theme_pubr() + 
-  scale_y_discrete("Unfavorable outcome threshold") +
-  scale_x_discrete(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) + 
-  scale_fill_viridis_c(TeX("Pr(No. observed unfavorable outcomes $\\geq$ threshold)")) + 
-  theme(legend.position = "bottom")
-
-```
-
-```{r eval= FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
-                       paste0(Sys.Date(), "_relapse-thresholds.jpg")),
-       device = "jpg",
-       height = 6,
-       width = 5.5,
-       units = "in")
-
-ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds.eps"),
-       device = "eps",
-       height = 6,
-       width = 5.75,
-       units = "in")
-```
-
-```{r eval = FALSE}
-bind_rows(mutate(s95.sit1.30, nk = 30),
-          mutate(s95.sit1.40, nk = 40),
-          mutate(s95.sit1.60, nk = 60),
-          mutate(s95.sit1.80, nk = 80)) %>% 
-  group_by(nk, regimen) %>% 
-  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
-            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
-            prop_stopped_3 = mean(n_relapse_interim1 >= 3)) %>% 
-  ungroup() %>% 
-  pivot_longer(cols = prop_stopped_1:prop_stopped_3,
-               names_to = "threshold",
-               values_to = "prop_stopped") %>% 
-  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
-  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Unfavorable Outcome Rate",
-                          regimen == 4 ~ "Minimal: 5% Unfavorable Outcome Rate",
-                          regimen == 5 ~ "Desirable: 2.5% Unfavorable Outcome Rate"),
-         threshold = str_remove(threshold, "prop_stopped_")) %>% 
-  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Unfavorable Outcome Rate","Minimal: 5% Unfavorable Outcome Rate","Desirable: 2.5% Unfavorable Outcome Rate"))) %>% 
-  ggplot(aes(x = as.factor(nk),
-             y = threshold, 
-             # shape = threshold, 
-             fill = prop_stopped)) + 
-  ggtitle("Dufault Fig 3. (Top)") +
-  facet_wrap(~rate, ncol = 1) + 
-  geom_tile() + 
-  geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
-            col = "white") +
-  ggpubr::theme_pubr() + 
-  scale_y_discrete("Unfavorable outcome threshold") +
-  scale_x_discrete(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) + 
-  scale_fill_viridis_c(TeX("Pr(No. observed unfavorable outcomes $\\geq$ threshold)")) + 
-  theme(legend.position = "bottom")
-
-ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds_annotated.eps"),
-       device = "eps",
-       dpi = 600,
-       height = 6,
-       width = 5.75,
-       units = "in")
-```
-
-```{r}
-bind_rows(mutate(s95.sit1.30, nk = 30),
+bind_rows(mutate(s95.sit1.20, nk = 20),
+          mutate(s95.sit1.30, nk = 30),
           mutate(s95.sit1.40, nk = 40),
           mutate(s95.sit1.60, nk = 60),
           mutate(s95.sit1.80, nk = 80)) %>% 
@@ -373,10 +217,70 @@ bind_rows(mutate(s95.sit1.30, nk = 30),
   geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
             col = "white") +
   ggpubr::theme_pubr() + 
-  scale_y_discrete("Unfavorable Outcome threshold") +
-  scale_x_discrete(TeX("$n_k$"), breaks = c(30,40,60,80), labels = c(30,40,60,80)) + 
-  scale_fill_viridis_c(TeX("Pr(No. observed relapses $\\geq$ threshold)")) + 
+  scale_y_discrete("Unfavorable outcome threshold") +
+  scale_x_discrete(TeX("$n_k$"), breaks = c(20,30,40,60,80), labels = c(20,30,40,60,80)) + 
+  scale_fill_viridis_c(TeX("Pr(No. observed unfavorable outcomes $\\geq$ threshold)")) + 
   theme(legend.position = "bottom")
+```
+
+```{r eval= FALSE}
+ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
+                       paste0(Sys.Date(), "_relapse-thresholds.jpg")),
+       device = "jpg",
+       height = 6,
+       width = 5.5,
+       units = "in")
+
+ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds.eps"),
+       device = "eps",
+       height = 6,
+       width = 6,
+       units = "in")
+```
+
+```{r eval = FALSE}
+bind_rows(mutate(s95.sit1.20, nk = 20),
+          mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
+            prop_stopped_2 = mean(n_relapse_interim1 >= 2),
+            prop_stopped_3 = mean(n_relapse_interim1 >= 3),
+            prop_stopped_4 = mean(n_relapse_interim1 >= 4),
+            prop_stopped_5 = mean(n_relapse_interim1 >= 5)) %>% 
+  ungroup() %>% 
+  pivot_longer(cols = prop_stopped_1:prop_stopped_5,
+               names_to = "threshold",
+               values_to = "prop_stopped") %>% 
+  filter(!regimen %in%  c(1,3)) %>% #removing control and one of the minimal regimens
+  mutate(rate = case_when(regimen == 2 ~ "Sub-optimal: 10% Unfavorable Outcome Rate",
+                          regimen == 4 ~ "Minimal: 5% Unfavorable Outcome Rate",
+                          regimen == 5 ~ "Desirable: 2.5% Unfavorable Outcome Rate"),
+         threshold = str_remove(threshold, "prop_stopped_")) %>% 
+  mutate(rate = factor(rate, levels = c("Sub-optimal: 10% Unfavorable Outcome Rate","Minimal: 5% Unfavorable Outcome Rate","Desirable: 2.5% Unfavorable Outcome Rate"))) %>% 
+  ggplot(aes(x = as.factor(nk),
+             y = threshold, 
+             # shape = threshold, 
+             fill = prop_stopped)) + 
+  ggtitle("Dufault Fig 3. (Top)") +
+  facet_wrap(~rate, ncol = 1) + 
+  geom_tile() + 
+  geom_text(aes(label = format(round(prop_stopped, 2), nsmall = 2)),
+            col = "white") +
+  ggpubr::theme_pubr() + 
+  scale_y_discrete("Unfavorable outcome threshold") +
+  scale_x_discrete(TeX("$n_k$"), breaks = c(20,30,40,60,80), labels = c(20,30,40,60,80)) + 
+  scale_fill_viridis_c(TeX("Pr(No. observed unfavorable outcomes $\\geq$ threshold)")) + 
+  theme(legend.position = "bottom")
+
+ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds_annotated.eps"),
+       device = "eps",
+       dpi = 600,
+       height = 6,
+       width = 6,
+       units = "in")
 ```
 
 ## TTP {.tabset .tabset-pills}
@@ -438,7 +342,7 @@ d_full %>%
   theme(legend.position = "bottom")
 ```
 
-```{r eval=false}
+```{r eval=FALSE}
 ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions.eps"),
        device = "eps",
        height = 6,
@@ -469,29 +373,6 @@ ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_ann
        height = 6,
        width = 9,
        units = "in")
-```
-
-```{r areaplot-tpp-decisions, fig.width = 10, fig.height = 6, fig.cap = "When theta_lrv = 0, theta_TV = 20, tau_LRV = tau_TV = 0.025.", eval = FALSE}
-d_full %>% 
-  mutate(nk_num = case_when(nk == "20" ~ 20,
-                            nk == "30" ~ 30,
-                            nk == "40" ~ 40,
-                            nk == "60" ~ 60,
-                            nk == "80" ~ 80)) %>% 
-  ggplot(aes(x = nk_num, y = Probability, fill = Decision)) + 
-  # geom_bar(stat = "identity") + 
-  geom_area() + 
-  facet_wrap(~Regimen, nrow = 1) +
-  scale_y_continuous("Decision Probability",
-                     breaks = seq(0,1,by = 0.1),
-                     labels = seq(0,1,by = 0.1)) +
-  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Continue", "GO"),
-                    labels = c("NO-GO", "Continue", "GO")) +
-  xlab(TeX("$n_k$")) + 
-  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
-  ggpubr::theme_pubr() + 
-  theme(legend.position = "bottom")
 ```
 
 <!-- # ```{r decisions-2, cache = TRUE} -->
@@ -550,9 +431,8 @@ d_full %>%
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_even.RData"))
 ```
 
-```{r area-plot_different-tv-lrv-risk, cache = TRUE}
-# Even
-
+```{r area-plot_different-tv-lrv-risk, eval = FALSE, cache = TRUE}
+# 1 Winner
 tau_tv <- list(0.025, 0.025, 0.025, 0.025, 0.025)
 names(tau_tv) <- tau_tv
 tau_lrv <- list(0.025, 0.05, 0.1, 0.15, 0.2)
@@ -653,7 +533,7 @@ load(here("data", "analyzed", "ranking", "2022-07-07_compare-v-control.RData"))
 
 p30 <- comparisons %>%
   filter(nk == "nk30") %>%
-  mutate(condition = factor(condition, levels = c("Even", "High-low", "High"))) %>% 
+  mutate(condition = factor(condition, levels = c("1 Winner", "2 Winners", "4 Winners"))) %>% 
   pivot_longer(cols = p.regimen.2.v.control:p.regimen.5.v.control,
                names_to = "comparison",
                values_to = "posterior") %>% 
@@ -681,7 +561,7 @@ p30 <- comparisons %>%
 
 p40 <- comparisons %>%
   filter(nk == "nk40") %>%
-  mutate(condition = factor(condition, levels = c("Even", "High-low", "High"))) %>% 
+  mutate(condition = factor(condition, levels = c("1 Winner", "2 Winners", "4 Winners"))) %>% 
   pivot_longer(cols = p.regimen.2.v.control:p.regimen.5.v.control,
                names_to = "comparison",
                values_to = "posterior") %>% 
@@ -709,7 +589,7 @@ p40 <- comparisons %>%
 
 p60 <- comparisons %>%
   filter(nk == "nk60") %>%
-  mutate(condition = factor(condition, levels = c("Even", "High-low", "High"))) %>% 
+  mutate(condition = factor(condition, levels = c("1 Winner", "2 Winners", "4 Winners"))) %>% 
   pivot_longer(cols = p.regimen.2.v.control:p.regimen.5.v.control,
                names_to = "comparison",
                values_to = "posterior") %>% 
@@ -754,25 +634,25 @@ even_stat <- ranking_probabilities$even_probabilities %>%
   mutate(top = as.numeric(p.subset.1 == max(p.subset.1))) %>% 
   group_by(regimen, nk) %>% 
   summarise(n_top = sum(top)) %>% 
-  mutate(condition = "Even")
+  mutate(condition = "1 Winner")
 hl_stat <- ranking_probabilities$highlow_probabilities %>% 
   group_by(sim, nk) %>% 
   mutate(top = as.numeric(p.subset.1 == max(p.subset.1))) %>% 
   group_by(regimen, nk) %>% 
   summarise(n_top = sum(top)) %>% 
-  mutate(condition = "High-low")
+  mutate(condition = "2 Winners")
 high_stat <- ranking_probabilities$high_probabilities %>% 
   group_by(sim, nk) %>% 
   mutate(top = as.numeric(p.subset.1 == max(p.subset.1))) %>% 
   group_by(regimen, nk) %>% 
   summarise(n_top = sum(top)) %>% 
-  mutate(condition = "High")
+  mutate(condition = "4 Winners")
 
 bind_rows(even_stat,
           hl_stat,
           high_stat) %>% 
   mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$"),
-         condition = factor(condition, levels = c("Even", "High-low", "High"))) %>%
+         condition = factor(condition, levels = c("1 Winner", "2 Winners", "4 Winners"))) %>%
   mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
   ggplot(aes(x = nk, y = n_top, fill = theta)) + 
   facet_wrap(~condition, nrow = 1) +
@@ -798,7 +678,7 @@ bind_rows(even_stat,
 ```
 
 ```{r}
-p1 <- mutate(ranking_probabilities$even_probabilities, condition = "Even") %>% 
+p1 <- mutate(ranking_probabilities$even_probabilities, condition = "1 Winner") %>% 
   filter(regimen %in% c("arm4", "arm5"),
          nk < 60) %>% 
   mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
@@ -832,7 +712,7 @@ p1 <- mutate(ranking_probabilities$even_probabilities, condition = "Even") %>%
         legend.direction = "vertical",
         axis.title.y = element_blank())
 
-p2 <- mutate(ranking_probabilities$highlow_probabilities, condition = "High-low") %>% 
+p2 <- mutate(ranking_probabilities$highlow_probabilities, condition = "2 Winners") %>% 
   filter(regimen %in% c("arm4", "arm5"),
          nk < 60) %>% 
   mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
@@ -866,7 +746,7 @@ p2 <- mutate(ranking_probabilities$highlow_probabilities, condition = "High-low"
         legend.direction = "vertical",
         axis.title.y = element_blank())
 
-p3 <- mutate(ranking_probabilities$high_probabilities, condition = "High") %>% 
+p3 <- mutate(ranking_probabilities$high_probabilities, condition = "4 Winners") %>% 
   filter(regimen %in% c("arm4", "arm5"),
          nk < 60) %>% 
   mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
@@ -1221,21 +1101,21 @@ temp1 <- ranking_probabilities$even_probabilities %>%
   summarise(n.greater.than = min(p.subset.2[regimen %in% c("arm5", "arm4")]) > max(p.subset.2[!regimen %in% c("arm5", "arm4")])) %>% 
   group_by(nk) %>% 
   summarise(p.greater.than = mean(n.greater.than)) %>%
-  mutate(condition = "Even")
+  mutate(condition = "1 Winner")
 
 temp2 <- ranking_probabilities$high_probabilities %>% 
   group_by(sim, nk) %>% 
   summarise(n.greater.than = min(p.subset.2[regimen %in% c("arm5", "arm4")]) > max(p.subset.2[!regimen %in% c("arm5", "arm4")])) %>% 
   group_by(nk) %>% 
   summarise(p.greater.than = mean(n.greater.than)) %>%
-  mutate(condition = "High")
+  mutate(condition = "4 Winners")
 
 temp3 <- ranking_probabilities$highlow_probabilities %>% 
   group_by(sim, nk) %>% 
   summarise(n.greater.than = min(p.subset.2[regimen %in% c("arm5", "arm4")]) > max(p.subset.2[!regimen %in% c("arm5", "arm4")])) %>% 
   group_by(nk) %>% 
   summarise(p.greater.than = mean(n.greater.than)) %>%
-  mutate(condition = "High-low")
+  mutate(condition = "2 Winners")
 
 p1 <- bind_rows(temp1, temp2, temp3) %>% 
   ggplot(aes(x = nk, y = p.greater.than, col = condition, lty = condition)) + 
@@ -1264,967 +1144,1292 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
 
 ## Together
 
-+ TTP (high-low) and Mixed survival rates such that:
-  + Regimen 1 (control): 5% relapse rate, reference log10(TTP) slope
-  + Regimen 2 (sub-optimal regimen): 10% relapse rate, -10% relative log10(TTP) slope
-  + Regimen 3 (minimal regimen): 5% relapse rate, 10% relative log10(TTP) slope
-  + Regimen 4 (minimal regimen): 5% relapse rate, 35% relative log10(TTP) slope
-  + Regimen 5 (desirable regimen): 2.5% relapse rate, 40% relative log10(TTP) slope
+<!-- + TTP (high-low) and Mixed survival rates such that: -->
+<!--   + Regimen 1 (control): 5% relapse rate, reference log10(TTP) slope -->
+<!--   + Regimen 2 (sub-optimal regimen): 10% relapse rate, -10% relative log10(TTP) slope -->
+<!--   + Regimen 3 (minimal regimen): 5% relapse rate, 10% relative log10(TTP) slope -->
+<!--   + Regimen 4 (minimal regimen): 5% relapse rate, 35% relative log10(TTP) slope -->
+<!--   + Regimen 5 (desirable regimen): 2.5% relapse rate, 40% relative log10(TTP) slope -->
   
-### Stopping sub-optimal regimens
+<!-- ### Stopping sub-optimal regimens -->
 
-Stopping based on:    
+<!-- Stopping based on:     -->
 
-+ TTP decision: NO-GO
-+ P(rank in top 2) < 60%
-+ Unfavorable Outcomes >= 2
+<!-- + TTP decision: NO-GO -->
+<!-- + P(rank in top 2) < 60% -->
+<!-- + Unfavorable Outcomes >= 2 -->
 
-```{r data-combined, eval = TRUE}
-######################
-# Regimen 2 (Sub-optimal)
-######################
-# relapses
-out_hl_30_relapse_r1 <- s95.sit1.30 %>% # Situation 1: Regimen 2 - Sub-optimal
-  filter(ttp.condition == "highlow", regimen == "2") %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the sub-optimal relapse counts from each dataset.
-  dplyr::select(-regimen, -ttp.condition)
-out_hl_30_relapse_r2 <- s95.sit1.30 %>% # Situation 1: Regimen 2 - Sub-optimal
-  filter(ttp.condition == "high", regimen == "2") %>%  
-  dplyr::select(-regimen, -ttp.condition)
-out_hl_30_relapse_r3 <- s95.sit1.30 %>% # Situation 1: Regimen 2 - Sub-optimal
-  filter(ttp.condition == "even", regimen == "2") %>% 
-  dplyr::select(-regimen, -ttp.condition)
-  
-# TPP decision
-out_hl_30_tpp_r1 <- decisions$decisions_highlow %>% # -10% slope
-  filter(Regimen == "Regimen 1", nk == 30) %>% # indexing sets control at 0
-  dplyr::select(-Regimen)
-out_hl_30_tpp_r2 <- decisions$decisions_highlow %>% # 10% slope
-  filter(Regimen == "Regimen 2", nk == 30) %>% # indexing sets control at 0
-  dplyr::select(-Regimen)
-out_hl_30_tpp_r3 <- decisions$decisions_even %>% # 20% slope
-  filter(Regimen == "Regimen 2", nk == 30) %>% # indexing sets control at 0
-  dplyr::select(-Regimen)
+<!-- ```{r data-combined, eval = TRUE} -->
+<!-- ###################### -->
+<!-- # Regimen 2 (Sub-optimal) -->
+<!-- ###################### -->
+<!-- # relapses -->
+<!-- out_hl_30_relapse_r1 <- s95.sit1.30 %>% # Situation 1: Regimen 2 - Sub-optimal -->
+<!--   filter(ttp.condition == "highlow", regimen == "2") %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the sub-optimal relapse counts from each dataset. -->
+<!--   dplyr::select(-regimen, -ttp.condition) -->
+<!-- out_hl_30_relapse_r2 <- s95.sit1.30 %>% # Situation 1: Regimen 2 - Sub-optimal -->
+<!--   filter(ttp.condition == "high", regimen == "2") %>%   -->
+<!--   dplyr::select(-regimen, -ttp.condition) -->
+<!-- out_hl_30_relapse_r3 <- s95.sit1.30 %>% # Situation 1: Regimen 2 - Sub-optimal -->
+<!--   filter(ttp.condition == "even", regimen == "2") %>%  -->
+<!--   dplyr::select(-regimen, -ttp.condition) -->
 
-# Ranking
-out_hl_30_ranking_r1 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm2") %>% # -10% slope
-  dplyr::select(-regimen)
-out_hl_30_ranking_r2 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm3") %>% # 10% slope
-  dplyr::select(-regimen)
-out_hl_30_ranking_r3 <- map_dfr(filter(ranking_probabilities$even_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm3") %>% #20% slope
-  dplyr::select(-regimen)
-  
-out_hl_30_r1 <- full_join(
-  full_join(out_hl_30_relapse_r1, out_hl_30_tpp_r1), 
-                       out_hl_30_ranking_r1)
-out_hl_30_r2 <- full_join(
-  full_join(out_hl_30_relapse_r2, out_hl_30_tpp_r2), 
-                       out_hl_30_ranking_r2)
-out_hl_30_r3 <- full_join(
-  full_join(out_hl_30_relapse_r3, out_hl_30_tpp_r3), 
-                       out_hl_30_ranking_r3)
-# Table(?)/Heatmap(?)
-# focus in on sub-optimal regimens (relapse)
-# sample size: 30
-# panels: A) -10%, B) 10%, C) 20% slope
-# prop stopped relapse, prop stopped TPP, prop not ranked first or second, prop stopped relapse | prop stopped TPP, prop stopped relapse | prop stopped TPP | not ranked first or second
+<!-- # TPP decision -->
+<!-- out_hl_30_tpp_r1 <- decisions$decisions_highlow %>% # -10% slope -->
+<!--   filter(Regimen == "Regimen 1", nk == 30) %>% # indexing sets control at 0 -->
+<!--   dplyr::select(-Regimen) -->
+<!-- out_hl_30_tpp_r2 <- decisions$decisions_highlow %>% # 10% slope -->
+<!--   filter(Regimen == "Regimen 2", nk == 30) %>% # indexing sets control at 0 -->
+<!--   dplyr::select(-Regimen) -->
+<!-- out_hl_30_tpp_r3 <- decisions$decisions_even %>% # 20% slope -->
+<!--   filter(Regimen == "Regimen 2", nk == 30) %>% # indexing sets control at 0 -->
+<!--   dplyr::select(-Regimen) -->
 
-t1 <- out_hl_30_r1 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6))) %>% 
-  mutate(Slope = "-10%", .before = 1)
+<!-- # Ranking -->
+<!-- out_hl_30_ranking_r1 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm2") %>% # -10% slope -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_ranking_r2 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm3") %>% # 10% slope -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_ranking_r3 <- map_dfr(filter(ranking_probabilities$even_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm3") %>% #20% slope -->
+<!--   dplyr::select(-regimen) -->
 
-t2 <- out_hl_30_r2 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6))) %>% 
-  mutate(Slope = "10%", .before = 1)
+<!-- out_hl_30_r1 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r1, out_hl_30_tpp_r1),  -->
+<!--                        out_hl_30_ranking_r1) -->
+<!-- out_hl_30_r2 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r2, out_hl_30_tpp_r2),  -->
+<!--                        out_hl_30_ranking_r2) -->
+<!-- out_hl_30_r3 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r3, out_hl_30_tpp_r3),  -->
+<!--                        out_hl_30_ranking_r3) -->
+<!-- # Table(?)/Heatmap(?) -->
+<!-- # focus in on sub-optimal regimens (relapse) -->
+<!-- # sample size: 30 -->
+<!-- # panels: A) -10%, B) 10%, C) 20% slope -->
+<!-- # prop stopped relapse, prop stopped TPP, prop not ranked first or second, prop stopped relapse | prop stopped TPP, prop stopped relapse | prop stopped TPP | not ranked first or second -->
 
-t3 <- out_hl_30_r3 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6))) %>% 
-  mutate(Slope = "20%", .before = 1)
+<!-- t1 <- out_hl_30_r1 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6))) %>%  -->
+<!--   mutate(Slope = "-10%", .before = 1) -->
 
-bind_rows(t1, t2, t3) %>% 
-  kable(digits = 3) %>% 
-  kable_styling()
+<!-- t2 <- out_hl_30_r2 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6))) %>%  -->
+<!--   mutate(Slope = "10%", .before = 1) -->
 
-p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                   TPP = ifelse(out_hl_30_r1$Decision == "NO-GO", "NO-GO", "Other"),
-                   ranking = ifelse(out_hl_30_r1$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                 TPP = ifelse(out_hl_30_r2$Decision == "NO-GO", "NO-GO", "Other"),
-                 ranking = ifelse(out_hl_30_r2$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                 TPP = ifelse(out_hl_30_r3$Decision == "NO-GO", "NO-GO", "Other"),
-                 ranking = ifelse(out_hl_30_r3$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
+<!-- t3 <- out_hl_30_r3 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6))) %>%  -->
+<!--   mutate(Slope = "20%", .before = 1) -->
+
+<!-- bind_rows(t1, t2, t3) %>%  -->
+<!--   kable(digits = 3) %>%  -->
+<!--   kable_styling() -->
+
+<!-- p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                    TPP = ifelse(out_hl_30_r1$Decision == "NO-GO", "NO-GO", "Other"), -->
+<!--                    ranking = ifelse(out_hl_30_r1$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r2$Decision == "NO-GO", "NO-GO", "Other"), -->
+<!--                  ranking = ifelse(out_hl_30_r2$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r3$Decision == "NO-GO", "NO-GO", "Other"), -->
+<!--                  ranking = ifelse(out_hl_30_r3$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
 
 
-p1 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 1, label = round(100*p_df$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("-10% Relative Slope, TTP")
+<!-- p1 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 1, label = round(100*p_df$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("-10% Relative Slope, TTP") -->
 
-p2 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_2$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) +
-  annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_2$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_2$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("10% Relative Slope, TTP")
+<!-- p2 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_2$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_2$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_2$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("10% Relative Slope, TTP") -->
 
-p3 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_3$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_3$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_3$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("20% Relative Slope, TTP")
+<!-- p3 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_3$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_3$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_3$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("20% Relative Slope, TTP") -->
 
-ggpubr::ggarrange(p1, p2, p3, nrow = 1)
-# desirable regimens (relapse)
-# prop stopped relapse, prop GO/Continue
-```
+<!-- ggpubr::ggarrange(p1, p2, p3, nrow = 1) -->
+<!-- # desirable regimens (relapse) -->
+<!-- # prop stopped relapse, prop GO/Continue -->
+<!-- ``` -->
 
-```{r eval = FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
-                              paste0(Sys.Date(), "_venn-diagram_all-together_sub-optimal-nk30.png")),
-       height = 5,
-       width = 12, 
-       units = "in",
-       device = "png")
-```
+<!-- ```{r eval = FALSE} -->
+<!-- ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", -->
+<!--                               paste0(Sys.Date(), "_venn-diagram_all-together_sub-optimal-nk30.png")), -->
+<!--        height = 5, -->
+<!--        width = 12,  -->
+<!--        units = "in", -->
+<!--        device = "png") -->
+<!-- ``` -->
 
-### De-prioritizing sub-optimal regimens
+<!-- ### De-prioritizing sub-optimal regimens -->
 
-De-prioritizing based on:    
+<!-- De-prioritizing based on:     -->
 
-+ TTP decision: NO-GO, **Continue**
-+ P(rank in top 2) < 60%
-+ Unfavorable Outcomes >= 2
+<!-- + TTP decision: NO-GO, **Continue** -->
+<!-- + P(rank in top 2) < 60% -->
+<!-- + Unfavorable Outcomes >= 2 -->
+
+<!-- ```{r} -->
+<!-- t1 <- out_hl_30_r1 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>%  -->
+<!--   mutate(Slope = "-10%", .before = 1) -->
+
+<!-- t2 <- out_hl_30_r2 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>%  -->
+<!--   mutate(Slope = "10%", .before = 1) -->
+
+<!-- t3 <- out_hl_30_r3 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>%  -->
+<!--   mutate(Slope = "20%", .before = 1) -->
+
+<!-- bind_rows(t1, t2, t3) %>%  -->
+<!--   kable(digits = 3) %>%  -->
+<!--   kable_styling() -->
+
+<!-- p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                    TPP = ifelse(out_hl_30_r1$Decision == "GO", "Other", "NO-GO"), -->
+<!--                    ranking = ifelse(out_hl_30_r1$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r2$Decision == "GO", "Other", "NO-GO"), -->
+<!--                  ranking = ifelse(out_hl_30_r2$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r3$Decision == "GO", "Other", "NO-GO"), -->
+<!--                  ranking = ifelse(out_hl_30_r3$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+
+
+<!-- p1 <- ggplot() +  -->
+<!--    # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("-10% Relative Slope, TTP") -->
+
+<!-- p2 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_2$only.TPP, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_2$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_2$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("10% Relative Slope, TTP") -->
+
+<!-- p3 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_3$only.TPP, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_3$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_3$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("20% Relative Slope, TTP") -->
+
+<!-- p1 + p2 + p3 +  -->
+<!--   plot_annotation(tag_levels = "A") -->
+<!-- ``` -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", -->
+<!--                               paste0(Sys.Date(), "_venn-diagram_all-together_sub-optimal-2-nk30.png")), -->
+<!--        height = 5, -->
+<!--        width = 12,  -->
+<!--        units = "in", -->
+<!--        device = "png") -->
+<!-- ``` -->
+
+<!-- ### De-prioritizing sub-optimal regimens (NEW) -->
+
+<!-- De-prioritizing based on:     -->
+
+<!-- + TTP decision: NO-GO, **Continue** -->
+<!-- + P(rank in top 2) < 60% -->
+<!-- + Unfavorable Outcomes >= 2 -->
+
+<!-- ```{r} -->
+<!-- ###################### -->
+<!-- # Regimen 2 (Sub-optimal relapses) -->
+<!-- ###################### -->
+
+<!-- # TPP decision -->
+<!-- out_hl_30_tpp_r1 <- decisions$decisions_highlow %>% # -10% slope -->
+<!--   filter(Regimen == "Regimen 1", nk == 30) %>% # indexing sets control at 0 -->
+<!--   dplyr::select(-Regimen) -->
+<!-- out_hl_30_tpp_r2 <- decisions$decisions_highlow %>% # 10% slope -->
+<!--   filter(Regimen == "Regimen 2", nk == 30) %>% # indexing sets control at 0 -->
+<!--   dplyr::select(-Regimen) -->
+<!-- out_hl_30_tpp_r3 <- decisions$decisions_highlow %>% # 35% slope -->
+<!--   filter(Regimen == "Regimen 3", nk == 30) %>% # indexing sets control at 0 -->
+<!--   dplyr::select(-Regimen) -->
+
+<!-- # Ranking -->
+<!-- out_hl_30_ranking_r1 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm2") %>% # -10% slope -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_ranking_r2 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm3") %>% # 10% slope -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_ranking_r3 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm4") %>% # 35% slope -->
+<!--   dplyr::select(-regimen) -->
+
+<!-- out_hl_30_r1 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r1, out_hl_30_tpp_r1),  -->
+<!--                        out_hl_30_ranking_r1) -->
+<!-- out_hl_30_r2 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r2, out_hl_30_tpp_r2),  -->
+<!--                        out_hl_30_ranking_r2) -->
+<!-- out_hl_30_r3 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r3, out_hl_30_tpp_r3),  -->
+<!--                        out_hl_30_ranking_r3) -->
+
+<!-- t1 <- out_hl_30_r1 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>%  -->
+<!--   mutate(Slope = "-10%", .before = 1) -->
+
+<!-- t2 <- out_hl_30_r2 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>%  -->
+<!--   mutate(Slope = "10%", .before = 1) -->
+
+<!-- t3 <- out_hl_30_r3 %>%  -->
+<!--   summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2), -->
+<!--             `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"), -->
+<!--             `P(top 2) < 0.6` = mean(p.subset.2 < 0.6), -->
+<!--             `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")), -->
+<!--             `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>%  -->
+<!--   mutate(Slope = "35%", .before = 1) -->
+
+<!-- bind_rows(t1, t2, t3) %>%  -->
+<!--   kable(digits = 3) %>%  -->
+<!--   kable_styling() -->
+
+<!-- p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                    TPP = ifelse(out_hl_30_r1$Decision == "GO", "Other", "NO-GO"), -->
+<!--                    ranking = ifelse(out_hl_30_r1$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r2$Decision == "GO", "Other", "NO-GO"), -->
+<!--                  ranking = ifelse(out_hl_30_r2$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 >= 2, "NO-GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r3$Decision == "GO", "Other", "NO-GO"), -->
+<!--                  ranking = ifelse(out_hl_30_r3$p.subset.2 <= 0.6, "NO-GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")), -->
+<!--             only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+
+<!-- p1 <- ggplot() +  -->
+<!--    # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("-10% Relative Slope, TTP") -->
+
+<!-- p2 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_2$only.TPP, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_2$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_2$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("10% Relative Slope, TTP") -->
+
+<!-- p3 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 1.95+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_3$only.TPP, 1), size = 6) + -->
+<!--   annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_3$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_3$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("35% Relative Slope, TTP") -->
+
+<!-- p1 + p2 + p3 +  -->
+<!--   plot_annotation(tag_levels = "A") -->
+<!-- ``` -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", -->
+<!--                               paste0(Sys.Date(), "_venn-diagram_all-together_sub-optimal-3-nk30.png")), -->
+<!--        height = 5, -->
+<!--        width = 12,  -->
+<!--        units = "in", -->
+<!--        device = "png") -->
+
+<!-- ggsave(filename = here("graphs", "submission", -->
+<!--                        "fig-06_venn-diagram_all-together_sub-optimal-3-nk30.tiff"), -->
+<!--        height = 5, -->
+<!--        width = 12,  -->
+<!--        units = "in", -->
+<!--        device = "tiff") -->
+
+<!-- p1 + p2 + p3 +  -->
+<!--   plot_annotation(tag_levels = "A", -->
+<!--                   title = "Dufault Fig. 6 (Top)") -->
+
+<!-- ggsave(filename = here("graphs", "submission", -->
+<!--                        "fig-06_venn-diagram_all-together_sub-optimal-3-nk30_annotated.tiff"), -->
+<!--        height = 5, -->
+<!--        dpi = 600, -->
+<!--        width = 12,  -->
+<!--        units = "in", -->
+<!--        device = "tiff") -->
+<!-- ``` -->
+
+<!-- ### Desirable regimens -->
+
+<!-- ```{r data-combined-desirable, eval = TRUE} -->
+<!-- ###################### -->
+<!-- # Regimen 5 (Desirable) -->
+<!-- ###################### -->
+<!-- # Situation 2,(ALL Desirable) S(52) = .95 -->
+<!-- load(here("data","analyzed","2022-03-07_s95-situation2-results_nk30_4mo-duration.RData")) -->
+<!-- s95.sit2.30 <- s95.situation2.results -->
+<!-- load(here("data","analyzed","2022-03-07_s95-situation2-results_nk40_4mo-duration.RData")) -->
+<!-- s95.sit2.40 <- s95.situation2.results -->
+<!-- load(here("data","analyzed","2022-03-07_s95-situation2-results_nk60_4mo-duration.RData")) -->
+<!-- s95.sit2.60 <- s95.situation2.results -->
+<!-- load(here("data","analyzed","2022-03-07_s95-situation2-results_nk80_4mo-duration.RData")) -->
+<!-- s95.sit2.80 <- s95.situation2.results; rm(s95.situation2.results) -->
+
+<!-- # relapses -->
+<!-- out_hl_30_relapse_r1 <- s95.sit2.30 %>%  -->
+<!--   filter(ttp.condition == "highlow", regimen == "1") %>%  # even though TTP did not play a role in simulating relapse data, a unique relapse dataset was simulated for each unique TTP data (essentially resulting in 3,000 simulated datasets of relapse for each regimen for each condition).  -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_relapse_r2 <- s95.sit2.30 %>%  -->
+<!--   filter(ttp.condition == "even", regimen == "1") %>%  # even though TTP did not play a role in simulating relapse data, a unique relapse dataset was simulated for each unique TTP data (essentially resulting in 3,000 simulated datasets of relapse for each regimen for each condition).  -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_relapse_r3 <- s95.sit1.30 %>%  -->
+<!--   filter(ttp.condition == "even", regimen == "2") %>%  -->
+<!--   dplyr::select(-regimen) -->
+
+<!-- # TPP decision -->
+<!-- out_hl_30_tpp_r1 <- decisions$decisions_highlow %>%  -->
+<!--   filter(Regimen == "Regimen 1", nk == 30) %>% # -10% -->
+<!--   dplyr::select(-Regimen) -->
+<!-- out_hl_30_tpp_r2 <- decisions$decisions_even %>%  -->
+<!--   filter(Regimen == "Regimen 1", nk == 30) %>% # 10%  -->
+<!--   dplyr::select(-Regimen) -->
+<!-- out_hl_30_tpp_r3 <- decisions$decisions_even %>%  -->
+<!--   filter(Regimen == "Regimen 2", nk == 30) %>% # 20% -->
+<!--   dplyr::select(-Regimen) -->
+
+<!-- # Ranking -->
+<!-- out_hl_30_ranking_r1 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm2") %>%  -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_ranking_r2 <- map_dfr(filter(ranking_probabilities$even_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm2") %>%  -->
+<!--   dplyr::select(-regimen) -->
+<!-- out_hl_30_ranking_r3 <- map_dfr(filter(ranking_probabilities$even_probabilities, nk == 30), -->
+<!--                              ~.x, .id = "sim") %>%  -->
+<!--   filter(regimen == "arm3") %>%  -->
+<!--   dplyr::select(-regimen) -->
+
+<!-- out_hl_30_r1 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r1, out_hl_30_tpp_r1),  -->
+<!--                        out_hl_30_ranking_r1) -->
+<!-- out_hl_30_r2 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r2, out_hl_30_tpp_r2),  -->
+<!--                        out_hl_30_ranking_r2) -->
+<!-- out_hl_30_r3 <- full_join( -->
+<!--   full_join(out_hl_30_relapse_r3, out_hl_30_tpp_r3),  -->
+<!--                        out_hl_30_ranking_r3) -->
+<!-- # Table(?)/Heatmap(?) -->
+<!-- # focus in on sub-optimal regimens (relapse) -->
+<!-- # sample size: 30 -->
+<!-- # panels: A) -10%, B) 10%, C) 20% slope -->
+<!-- # prop stopped relapse, prop stopped TPP, prop not ranked first or second, prop stopped relapse | prop stopped TPP, prop stopped relapse | prop stopped TPP | not ranked first or second -->
+
+<!-- t1 <- out_hl_30_r1 %>%  -->
+<!--   summarise(`GO relapse` = mean(n_relapse_interim1 < 2), -->
+<!--             `GO TPP` = mean(Decision == "GO"), -->
+<!--             `P(top 2) >= 0.6` = mean(p.subset.2 >= 0.6), -->
+<!--             `GO relapse and TPP` = mean((n_relapse_interim1 < 2) & (Decision == "GO")), -->
+<!--             `GO relapse and TPP and P(top 2) >= 0.6` = mean((n_relapse_interim1 < 2) & (Decision == "GO") & mean(p.subset.2 >= 0.6))) %>%  -->
+<!--   mutate(Slope = "-10%", .before = 1) -->
+
+<!-- t2 <- out_hl_30_r2 %>%  -->
+<!--   summarise(`GO relapse` = mean(n_relapse_interim1 < 2), -->
+<!--             `GO TPP` = mean(Decision == "GO"), -->
+<!--             `P(top 2) >= 0.6` = mean(p.subset.2 >= 0.6), -->
+<!--             `GO relapse and TPP` = mean((n_relapse_interim1 < 2) & (Decision == "GO")), -->
+<!--             `GO relapse and TPP and P(top 2) >= 0.6` = mean((n_relapse_interim1 < 2) & (Decision == "GO") & mean(p.subset.2 >= 0.6))) %>% -->
+<!--   mutate(Slope = "10%", .before = 1) -->
+
+<!-- t3 <- out_hl_30_r3 %>%  -->
+<!--   summarise(`GO relapse` = mean(n_relapse_interim1 < 2), -->
+<!--             `GO TPP` = mean(Decision == "GO"), -->
+<!--             `P(top 2) >= 0.6` = mean(p.subset.2 >= 0.6), -->
+<!--             `GO relapse and TPP` = mean((n_relapse_interim1 < 2) & (Decision == "GO")), -->
+<!--             `GO relapse and TPP and P(top 2) >= 0.6` = mean((n_relapse_interim1 < 2) & (Decision == "GO") & mean(p.subset.2 >= 0.6))) %>% -->
+<!--   mutate(Slope = "20%", .before = 1) -->
+
+<!-- bind_rows(t1, t2, t3) %>%  -->
+<!--   kable(digits = 3) %>%  -->
+<!--   kable_styling() -->
+
+<!-- p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 < 2, "GO", "Other"), -->
+<!--                    TPP = ifelse(out_hl_30_r1$Decision == "GO", "GO", "Other"), -->
+<!--                    ranking = ifelse(out_hl_30_r1$p.subset.2 >= 0.6, "GO", "Other")) %>%  -->
+<!--    summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "GO")), -->
+<!--             only.relapse = mean((relapse == "GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 < 2, "GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r2$Decision == "GO", "GO", "Other"), -->
+<!--                  ranking = ifelse(out_hl_30_r2$p.subset.2 >= 0.6, "GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "GO")), -->
+<!--             only.relapse = mean((relapse == "GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+<!-- p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 < 2, "GO", "Other"), -->
+<!--                  TPP = ifelse(out_hl_30_r3$Decision == "GO", "GO", "Other"), -->
+<!--                  ranking = ifelse(out_hl_30_r3$p.subset.2 >= 0.6, "GO", "Other")) %>%  -->
+<!--   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "GO") & (TPP == "Other")), -->
+<!--             agree.relapse.TPP = mean((relapse == TPP) & (relapse == "GO") & (ranking == "Other")), -->
+<!--             agree.TPP.rank = mean((TPP == ranking) & (ranking == "GO") & (relapse == "Other")), -->
+<!--             agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "GO")), -->
+<!--             only.relapse = mean((relapse == "GO") & (TPP == "Other") & (ranking == "Other")), -->
+<!--             only.TPP = mean((TPP == "GO") & (ranking == "Other") & (relapse == "Other")), -->
+<!--             only.rank = mean((ranking == "GO") & (TPP == "Other") & (relapse == "Other")), -->
+<!--             p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other")) -->
+
+
+<!-- p1 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 1, label = round(100*p_df$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Desirable regimens missed: ", round(p_df$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("-10% Relative Slope, TTP") -->
+
+<!-- p2 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_2$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_2$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_2$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Desirable regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("10% Relative Slope, TTP") -->
+
+<!-- p3 <- ggplot() +  -->
+<!--   # TPP -->
+<!--   geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)),  -->
+<!--                    y = 1+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[1], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Ranking -->
+<!--   geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[2], -->
+<!--                alpha = 0.3) +  -->
+<!--   # Unfavorable Outcome -->
+<!--   geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)), -->
+<!--                    y = 2.25+1*sin(seq(0,2*pi,length.out=100))), -->
+<!--                fill = ucsf_col_pal[3], -->
+<!--                alpha = 0.3) +  -->
+<!--   annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) +  -->
+<!--   annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) +  -->
+<!--   annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) +  -->
+<!--   coord_fixed(xlim = c(-3,3), -->
+<!--               ylim = c(-0.5, 3.5)) + -->
+<!--   annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_3$only.TPP, 1), size = 5) + -->
+<!--   annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) + -->
+<!--   annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_3$agree.all, 1)) + -->
+<!--   annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_3$agree.relapse.rank, 1)) + -->
+<!--   ggpubr::theme_pubr() +  -->
+<!--   labs(caption = paste0("Desirable regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text = element_blank(), -->
+<!--         axis.title = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         plot.title = element_text(hjust = 0.5)) +  -->
+<!--   ggtitle("20% Relative Slope, TTP") -->
+
+<!-- ggpubr::ggarrange(p1, p2, p3, nrow = 1) -->
+<!-- # desirable regimens (relapse) -->
+<!-- # prop stopped relapse, prop GO/Continue -->
+<!-- ``` -->
+
+<!-- ```{r eval = FALSE} -->
+<!-- ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", -->
+<!--                               paste0(Sys.Date(), "_venn-diagram_all-together_desirable-nk30.png")), -->
+<!--        height = 5, -->
+<!--        width = 12,  -->
+<!--        units = "in", -->
+<!--        device = "png") -->
+<!-- ``` -->
+
+### New Attempt
 
 ```{r}
-t1 <- out_hl_30_r1 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>% 
-  mutate(Slope = "-10%", .before = 1)
+######################
+# Decision bar plot
+######################
+library(ggpattern)
 
-t2 <- out_hl_30_r2 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>% 
-  mutate(Slope = "10%", .before = 1)
+data_shape_function <- function(relapse_data, relapse_regimen, tpp_data, ranking_data, nk_choice){
+  # Relapses
+  r1 <- relapse_data %>% # Situation 1: Regimen 2 - Sub-optimal, Regimen 3 - minimal, Regimen 4 - minimal, Regimen 5 - desirable
+    filter(ttp.condition == "highlow", regimen == relapse_regimen) %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the sub-optimal relapse counts from each dataset.
+    dplyr::select(-regimen, -ttp.condition)
+  
+  # TPP Decision
+  tpp1 <- tpp_data %>% # -10% slope
+    filter(Regimen == "Regimen 1", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp2 <- tpp_data %>% # 10% slope
+    filter(Regimen == "Regimen 2", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp3 <- tpp_data %>% # 35% slope
+    filter(Regimen == "Regimen 3", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp4 <- tpp_data %>% # 40% slope
+    filter(Regimen == "Regimen 4", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  
+  # Ranking
+  rank1 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm2") %>% # -10% slope
+    dplyr::select(-regimen)
+  rank2 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm3") %>% # 10% slope
+    dplyr::select(-regimen)
+  rank3 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm4") %>% # 35% slope
+    dplyr::select(-regimen)
+  rank4 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm5") %>% # 40% slope
+    dplyr::select(-regimen)
+  
+  out1 <- full_join(
+    full_join(r1, tpp1), rank1) %>% 
+    mutate(true.slope = "-10%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out2 <- full_join(
+    full_join(r1, tpp2), rank2) %>% 
+    mutate(true.slope = "10%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out3 <- full_join(
+    full_join(r1, tpp3), rank3) %>% 
+    mutate(true.slope = "35%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out4 <- full_join(
+    full_join(r1, tpp4), rank4) %>% 
+    mutate(true.slope = "40%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  
+  out <- bind_rows(out1, out2, out3, out4)
+  return(out)
+}
 
-t3 <- out_hl_30_r3 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>% 
-  mutate(Slope = "20%", .before = 1)
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 40)
+d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 60)
+d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 80)
 
-bind_rows(t1, t2, t3) %>% 
+p_suboptimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "black",
+                   pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+
+bind_rows(d20, d30, d40)  %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  transmute(true.slope, nk, decision, Criterion = decision2, `N (%)` = paste0(n, " (", round(100*prop, 1), ")")) %>% 
+  pivot_wider(names_from = decision, values_from = `N (%)`) %>%
+  kable(caption = "Sub-optimal relapse rate (10%).") %>% 
+  kable_styling() %>% 
+  pack_rows(group_label = "Relative TTP slope: -10%",
+            start_row = 1,
+            end_row = 9) %>% 
+  pack_rows(group_label = "Relative TTP slope: 10%",
+            start_row = 10,
+            end_row = 18) %>% 
+  pack_rows(group_label = "Relative TTP slope: 35%",
+            start_row = 19,
+            end_row = 25) %>% 
+  pack_rows(group_label = "Relative TTP slope: 40%",
+            start_row = 26,
+            end_row = 33)
+
+p_suboptimal
+
+# Minimal
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 40)
+d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 60)
+d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 80)
+
+p_minimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "black",
+                   pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+p_minimal
+
+# Desirable
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 40)
+d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 60)
+d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 80)
+
+p_desirable <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "black",
+                   pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
   kable(digits = 3) %>% 
   kable_styling()
 
-p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                   TPP = ifelse(out_hl_30_r1$Decision == "GO", "Other", "NO-GO"),
-                   ranking = ifelse(out_hl_30_r1$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                 TPP = ifelse(out_hl_30_r2$Decision == "GO", "Other", "NO-GO"),
-                 ranking = ifelse(out_hl_30_r2$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                 TPP = ifelse(out_hl_30_r3$Decision == "GO", "Other", "NO-GO"),
-                 ranking = ifelse(out_hl_30_r3$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
+p_desirable
 
-
-p1 <- ggplot() + 
-   # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("-10% Relative Slope, TTP")
-
-p2 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 6) +
-  annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 6) +
-  annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_2$only.TPP, 1), size = 6) +
-  annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) +
-  annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_2$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_2$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("10% Relative Slope, TTP")
-
-p3 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 6) +
-  annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 6) +
-  annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_3$only.TPP, 1), size = 6) +
-  annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_3$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_3$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("20% Relative Slope, TTP")
-
-p1 + p2 + p3 + 
-  plot_annotation(tag_levels = "A")
+p_suboptimal / p_minimal / p_desirable + 
+  plot_layout(guides = "collect") + 
+  plot_annotation(tag_levels = "A") &
+  theme(legend.position = "bottom")
 ```
-
-```{r eval = FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
-                              paste0(Sys.Date(), "_venn-diagram_all-together_sub-optimal-2-nk30.png")),
-       height = 5,
-       width = 12, 
-       units = "in",
-       device = "png")
-```
-
-### De-prioritizing sub-optimal regimens (NEW)
-
-De-prioritizing based on:    
-
-+ TTP decision: NO-GO, **Continue**
-+ P(rank in top 2) < 60%
-+ Unfavorable Outcomes >= 2
 
 ```{r}
-######################
-# Regimen 2 (Sub-optimal relapses)
-######################
-  
-# TPP decision
-out_hl_30_tpp_r1 <- decisions$decisions_highlow %>% # -10% slope
-  filter(Regimen == "Regimen 1", nk == 30) %>% # indexing sets control at 0
-  dplyr::select(-Regimen)
-out_hl_30_tpp_r2 <- decisions$decisions_highlow %>% # 10% slope
-  filter(Regimen == "Regimen 2", nk == 30) %>% # indexing sets control at 0
-  dplyr::select(-Regimen)
-out_hl_30_tpp_r3 <- decisions$decisions_highlow %>% # 35% slope
-  filter(Regimen == "Regimen 3", nk == 30) %>% # indexing sets control at 0
-  dplyr::select(-Regimen)
-
-# Ranking
-out_hl_30_ranking_r1 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm2") %>% # -10% slope
-  dplyr::select(-regimen)
-out_hl_30_ranking_r2 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm3") %>% # 10% slope
-  dplyr::select(-regimen)
-out_hl_30_ranking_r3 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm4") %>% # 35% slope
-  dplyr::select(-regimen)
-  
-out_hl_30_r1 <- full_join(
-  full_join(out_hl_30_relapse_r1, out_hl_30_tpp_r1), 
-                       out_hl_30_ranking_r1)
-out_hl_30_r2 <- full_join(
-  full_join(out_hl_30_relapse_r2, out_hl_30_tpp_r2), 
-                       out_hl_30_ranking_r2)
-out_hl_30_r3 <- full_join(
-  full_join(out_hl_30_relapse_r3, out_hl_30_tpp_r3), 
-                       out_hl_30_ranking_r3)
-
-t1 <- out_hl_30_r1 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>% 
-  mutate(Slope = "-10%", .before = 1)
-
-t2 <- out_hl_30_r2 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>% 
-  mutate(Slope = "10%", .before = 1)
-
-t3 <- out_hl_30_r3 %>% 
-  summarise(`Stop relapse` = mean(n_relapse_interim1 >= 2),
-            `Stop TPP` = mean(Decision == "NO-GO" | Decision == "Continue"),
-            `P(top 2) < 0.6` = mean(p.subset.2 < 0.6),
-            `Stop relapse or TPP` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | (Decision == "Continue")),
-            `Stop relapse or TPP or P(top 2) < 0.6` = mean((n_relapse_interim1 >= 2) | (Decision == "NO-GO") | mean(p.subset.2 < 0.6) | (Decision == "Continue"))) %>% 
-  mutate(Slope = "35%", .before = 1)
-
-bind_rows(t1, t2, t3) %>% 
-  kable(digits = 3) %>% 
-  kable_styling()
-
-p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                   TPP = ifelse(out_hl_30_r1$Decision == "GO", "Other", "NO-GO"),
-                   ranking = ifelse(out_hl_30_r1$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                 TPP = ifelse(out_hl_30_r2$Decision == "GO", "Other", "NO-GO"),
-                 ranking = ifelse(out_hl_30_r2$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 >= 2, "NO-GO", "Other"),
-                 TPP = ifelse(out_hl_30_r3$Decision == "GO", "Other", "NO-GO"),
-                 ranking = ifelse(out_hl_30_r3$p.subset.2 <= 0.6, "NO-GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "NO-GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "NO-GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "NO-GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "NO-GO")),
-            only.relapse = mean((relapse == "NO-GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "NO-GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "NO-GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-
-p1 <- ggplot() + 
-   # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("-10% Relative Slope, TTP")
-
-p2 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 6) +
-  annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 6) +
-  annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_2$only.TPP, 1), size = 6) +
-  annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) +
-  annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_2$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_2$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("10% Relative Slope, TTP")
-
-p3 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 1.95+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable\n  Outcome", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 4.5, vjust = 1) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 4.5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.95, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 6) +
-  annotate(geom = "text", x = -0.95, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 6) +
-  annotate(geom = "text", x = 0, y = 0.5, label = round(100*p_df_3$only.TPP, 1), size = 6) +
-  annotate(geom = "text", x = -0.35, y = 1.325, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.35, y = 1.325, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.7, label = round(100*p_df_3$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.225, label = round(100*p_df_3$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Sub-optimal regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("35% Relative Slope, TTP")
-
-p1 + p2 + p3 + 
-  plot_annotation(tag_levels = "A")
+#| eval: false
+ggsave(filename = here("graphs", "submission", "fig-02_panel-oc-full-framework.png"),
+       device = "png",
+       height = 8,
+       width = 8,
+       units = "in")
 ```
 
-```{r eval = FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
-                              paste0(Sys.Date(), "_venn-diagram_all-together_sub-optimal-3-nk30.png")),
-       height = 5,
-       width = 12, 
-       units = "in",
-       device = "png")
-
-ggsave(filename = here("graphs", "submission",
-                       "fig-06_venn-diagram_all-together_sub-optimal-3-nk30.tiff"),
-       height = 5,
-       width = 12, 
-       units = "in",
-       device = "tiff")
-
-p1 + p2 + p3 + 
-  plot_annotation(tag_levels = "A",
-                  title = "Dufault Fig. 6 (Top)")
-
-ggsave(filename = here("graphs", "submission",
-                       "fig-06_venn-diagram_all-together_sub-optimal-3-nk30_annotated.tiff"),
-       height = 5,
-       dpi = 600,
-       width = 12, 
-       units = "in",
-       device = "tiff")
-```
-
-### Desirable regimens
-
-```{r data-combined-desirable, eval = TRUE}
-######################
-# Regimen 5 (Desirable)
-######################
-# Situation 2,(ALL Desirable) S(52) = .95
-load(here("data","analyzed","2022-03-07_s95-situation2-results_nk30_4mo-duration.RData"))
-s95.sit2.30 <- s95.situation2.results
-load(here("data","analyzed","2022-03-07_s95-situation2-results_nk40_4mo-duration.RData"))
-s95.sit2.40 <- s95.situation2.results
-load(here("data","analyzed","2022-03-07_s95-situation2-results_nk60_4mo-duration.RData"))
-s95.sit2.60 <- s95.situation2.results
-load(here("data","analyzed","2022-03-07_s95-situation2-results_nk80_4mo-duration.RData"))
-s95.sit2.80 <- s95.situation2.results; rm(s95.situation2.results)
-
-# relapses
-out_hl_30_relapse_r1 <- s95.sit2.30 %>% 
-  filter(ttp.condition == "highlow", regimen == "1") %>%  # even though TTP did not play a role in simulating relapse data, a unique relapse dataset was simulated for each unique TTP data (essentially resulting in 3,000 simulated datasets of relapse for each regimen for each condition). 
-  dplyr::select(-regimen)
-out_hl_30_relapse_r2 <- s95.sit2.30 %>% 
-  filter(ttp.condition == "even", regimen == "1") %>%  # even though TTP did not play a role in simulating relapse data, a unique relapse dataset was simulated for each unique TTP data (essentially resulting in 3,000 simulated datasets of relapse for each regimen for each condition). 
-  dplyr::select(-regimen)
-out_hl_30_relapse_r3 <- s95.sit1.30 %>% 
-  filter(ttp.condition == "even", regimen == "2") %>% 
-  dplyr::select(-regimen)
-  
-# TPP decision
-out_hl_30_tpp_r1 <- decisions$decisions_highlow %>% 
-  filter(Regimen == "Regimen 1", nk == 30) %>% # -10%
-  dplyr::select(-Regimen)
-out_hl_30_tpp_r2 <- decisions$decisions_even %>% 
-  filter(Regimen == "Regimen 1", nk == 30) %>% # 10% 
-  dplyr::select(-Regimen)
-out_hl_30_tpp_r3 <- decisions$decisions_even %>% 
-  filter(Regimen == "Regimen 2", nk == 30) %>% # 20%
-  dplyr::select(-Regimen)
-
-# Ranking
-out_hl_30_ranking_r1 <- map_dfr(filter(ranking_probabilities$highlow_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm2") %>% 
-  dplyr::select(-regimen)
-out_hl_30_ranking_r2 <- map_dfr(filter(ranking_probabilities$even_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm2") %>% 
-  dplyr::select(-regimen)
-out_hl_30_ranking_r3 <- map_dfr(filter(ranking_probabilities$even_probabilities, nk == 30),
-                             ~.x, .id = "sim") %>% 
-  filter(regimen == "arm3") %>% 
-  dplyr::select(-regimen)
-  
-out_hl_30_r1 <- full_join(
-  full_join(out_hl_30_relapse_r1, out_hl_30_tpp_r1), 
-                       out_hl_30_ranking_r1)
-out_hl_30_r2 <- full_join(
-  full_join(out_hl_30_relapse_r2, out_hl_30_tpp_r2), 
-                       out_hl_30_ranking_r2)
-out_hl_30_r3 <- full_join(
-  full_join(out_hl_30_relapse_r3, out_hl_30_tpp_r3), 
-                       out_hl_30_ranking_r3)
-# Table(?)/Heatmap(?)
-# focus in on sub-optimal regimens (relapse)
-# sample size: 30
-# panels: A) -10%, B) 10%, C) 20% slope
-# prop stopped relapse, prop stopped TPP, prop not ranked first or second, prop stopped relapse | prop stopped TPP, prop stopped relapse | prop stopped TPP | not ranked first or second
-
-t1 <- out_hl_30_r1 %>% 
-  summarise(`GO relapse` = mean(n_relapse_interim1 < 2),
-            `GO TPP` = mean(Decision == "GO"),
-            `P(top 2) >= 0.6` = mean(p.subset.2 >= 0.6),
-            `GO relapse and TPP` = mean((n_relapse_interim1 < 2) & (Decision == "GO")),
-            `GO relapse and TPP and P(top 2) >= 0.6` = mean((n_relapse_interim1 < 2) & (Decision == "GO") & mean(p.subset.2 >= 0.6))) %>% 
-  mutate(Slope = "-10%", .before = 1)
-
-t2 <- out_hl_30_r2 %>% 
-  summarise(`GO relapse` = mean(n_relapse_interim1 < 2),
-            `GO TPP` = mean(Decision == "GO"),
-            `P(top 2) >= 0.6` = mean(p.subset.2 >= 0.6),
-            `GO relapse and TPP` = mean((n_relapse_interim1 < 2) & (Decision == "GO")),
-            `GO relapse and TPP and P(top 2) >= 0.6` = mean((n_relapse_interim1 < 2) & (Decision == "GO") & mean(p.subset.2 >= 0.6))) %>%
-  mutate(Slope = "10%", .before = 1)
-
-t3 <- out_hl_30_r3 %>% 
-  summarise(`GO relapse` = mean(n_relapse_interim1 < 2),
-            `GO TPP` = mean(Decision == "GO"),
-            `P(top 2) >= 0.6` = mean(p.subset.2 >= 0.6),
-            `GO relapse and TPP` = mean((n_relapse_interim1 < 2) & (Decision == "GO")),
-            `GO relapse and TPP and P(top 2) >= 0.6` = mean((n_relapse_interim1 < 2) & (Decision == "GO") & mean(p.subset.2 >= 0.6))) %>%
-  mutate(Slope = "20%", .before = 1)
-
-bind_rows(t1, t2, t3) %>% 
-  kable(digits = 3) %>% 
-  kable_styling()
-
-p_df <- data.frame(relapse = ifelse(out_hl_30_r1$n_relapse_interim1 < 2, "GO", "Other"),
-                   TPP = ifelse(out_hl_30_r1$Decision == "GO", "GO", "Other"),
-                   ranking = ifelse(out_hl_30_r1$p.subset.2 >= 0.6, "GO", "Other")) %>% 
-   summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "GO")),
-            only.relapse = mean((relapse == "GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_2 <- data.frame(relapse = ifelse(out_hl_30_r2$n_relapse_interim1 < 2, "GO", "Other"),
-                 TPP = ifelse(out_hl_30_r2$Decision == "GO", "GO", "Other"),
-                 ranking = ifelse(out_hl_30_r2$p.subset.2 >= 0.6, "GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "GO")),
-            only.relapse = mean((relapse == "GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-p_df_3 <- data.frame(relapse = ifelse(out_hl_30_r3$n_relapse_interim1 < 2, "GO", "Other"),
-                 TPP = ifelse(out_hl_30_r3$Decision == "GO", "GO", "Other"),
-                 ranking = ifelse(out_hl_30_r3$p.subset.2 >= 0.6, "GO", "Other")) %>% 
-  summarise(agree.relapse.rank = mean((relapse == ranking) & (relapse == "GO") & (TPP == "Other")),
-            agree.relapse.TPP = mean((relapse == TPP) & (relapse == "GO") & (ranking == "Other")),
-            agree.TPP.rank = mean((TPP == ranking) & (ranking == "GO") & (relapse == "Other")),
-            agree.all = mean((TPP == ranking) & (TPP == relapse) & (relapse == "GO")),
-            only.relapse = mean((relapse == "GO") & (TPP == "Other") & (ranking == "Other")),
-            only.TPP = mean((TPP == "GO") & (ranking == "Other") & (relapse == "Other")),
-            only.rank = mean((ranking == "GO") & (TPP == "Other") & (relapse == "Other")),
-            p.missed = mean(relapse == "Other" & ranking == "Other" & TPP == "Other"))
-
-
-p1 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 1, label = round(100*p_df$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Desirable regimens missed: ", round(p_df$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("-10% Relative Slope, TTP")
-
-p2 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_2$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_2$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_2$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_2$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_2$agree.relapse.TPP, 3)) +
-  annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_2$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_2$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Desirable regimens missed: ", round(p_df_2$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("10% Relative Slope, TTP")
-
-p3 <- ggplot() + 
-  # TPP
-  geom_polygon(aes(x = 0+1*cos(seq(0,2*pi,length.out=100)), 
-                   y = 1+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[1],
-               alpha = 0.3) + 
-  # Ranking
-  geom_polygon(aes(x = -0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[2],
-               alpha = 0.3) + 
-  # Unfavorable Outcome
-  geom_polygon(aes(x = 0.75+1*cos(seq(0,2*pi,length.out=100)),
-                   y = 2.25+1*sin(seq(0,2*pi,length.out=100))),
-               fill = ucsf_col_pal[3],
-               alpha = 0.3) + 
-  annotate(geom = "text", x = 1.5, y = 3, hjust = 0, label = "Unfavorable Outcome", size = 5) + 
-  annotate(geom = "text", x = -1.5, y = 3, hjust = 1, label = "Ranking", size = 5) + 
-  annotate(geom = "text", x = 0, y = 0, vjust = 1.1, label = "TPP", size = 5) + 
-  coord_fixed(xlim = c(-3,3),
-              ylim = c(-0.5, 3.5)) +
-  annotate(geom = "text", x = 0.75, y = 2.25, label = round(100*p_df_3$only.relapse, 1), size = 5) +
-  annotate(geom = "text", x = -0.75, y = 2.25, label = round(100*p_df_3$only.rank, 1), size = 5) +
-  annotate(geom = "text", x = 0, y = 1, label = round(100*p_df_3$only.TPP, 1), size = 5) +
-  annotate(geom = "text", x = -0.375, y = 1.55, hjust = 1, label = round(100*p_df_3$agree.TPP.rank, 1)) +
-  annotate(geom = "text", x = 0.375, y = 1.55, hjust = 0, label = round(100*p_df_3$agree.relapse.TPP, 1)) +
-  annotate(geom = "text", x = 0, y = 1.85, label = round(100*p_df_3$agree.all, 1)) +
-  annotate(geom = "text", x = 0, y = 2.25, label = round(100*p_df_3$agree.relapse.rank, 1)) +
-  ggpubr::theme_pubr() + 
-  labs(caption = paste0("Desirable regimens missed: ", round(p_df_3$p.missed*100, 2), "%")) +
-  theme(axis.line = element_blank(),
-        axis.text = element_blank(),
-        axis.title = element_blank(),
-        axis.ticks = element_blank(),
-        plot.title = element_text(hjust = 0.5)) + 
-  ggtitle("20% Relative Slope, TTP")
-
-ggpubr::ggarrange(p1, p2, p3, nrow = 1)
-# desirable regimens (relapse)
-# prop stopped relapse, prop GO/Continue
-```
-
-```{r eval = FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
-                              paste0(Sys.Date(), "_venn-diagram_all-together_desirable-nk30.png")),
-       height = 5,
-       width = 12, 
-       units = "in",
-       device = "png")
-```
 
 ## Single Example
 
@@ -2308,336 +2513,4 @@ t_relapse %>%
         caption = "Interim results from a single simulated phase 2B study with thirty partients per regimen. The target product profile (TPP) assumes $\\theta_{LRV} = 0, \\theta_{TV} = 20, \\tau_{LRV} = \\tau_{TV} = 0.025$.") %>% 
   kable_styling() %>% 
   add_header_above(c(" " = 2, "Interim 1" = 9))
-```
-
-```{r eval = FALSE}
-t_relapse %>% 
-  mutate(regimen = paste0("arm", regimen)) %>% 
-  full_join(t_estimates) %>% 
-  full_join(t_tpp) %>% 
-  full_join(t_gcontrol) %>% 
-  full_join(t_rank) %>%
-  ggplot()
-```
-
-
-## Frequentist summaries {.tabset .tabset-pills}
-
-```{r}
-# Even
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-20_even.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-30_even.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-40_even.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-60_even.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-80_even.RData"))
-
-# High
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-20_high.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-30_high.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-40_high.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-60_high.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-80_high.RData"))
-
-# High-Low
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-20_highlow.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-30_highlow.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-40_highlow.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-60_highlow.RData"))
-load(here("data","cleaned","2022-06-27_summary_random-intercept-random-slope_nk-80_highlow.RData"))
-```
-
-```{r cache = TRUE, include=FALSE}
-coef_rank_fn <- function(modresults){
-  temp <- modresults$fixed[2:6,] %>% 
-    rownames_to_column(var = "Regimen") %>% 
-    mutate(Regimen = case_when(Regimen == "week" ~ "Regimen 1",
-                               Regimen == "week:arm2" ~ "Regimen 2",
-                               Regimen == "week:arm3" ~ "Regimen 3",
-                               Regimen == "week:arm4" ~ "Regimen 4",
-                               TRUE ~ "Regimen 5")) %>% 
-    mutate("Slope" = ifelse(Regimen != "Regimen 1", 
-                            Estimate + Estimate[Regimen == "Regimen 1"],
-                            Estimate)) %>% 
-    mutate(rank = rank(Slope)) # 5 is steepest
-  
-  output <- temp %>% 
-    dplyr::select(Regimen, Slope, `l-95% CI`, rank)
-  
-  return(output)
-}
-
-plan(multisession)
-rank20_even <- future_map_dfr(summary_mods_even_20, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank30_even <- future_map_dfr(summary_mods_even_30, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank40_even <- future_map_dfr(summary_mods_even_40, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank60_even <- future_map_dfr(summary_mods_even_60, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank80_even <- future_map_dfr(summary_mods_even_80, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-
-rank20_high <- future_map_dfr(summary_mods_high_20, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank30_high <- future_map_dfr(summary_mods_high_30, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank40_high <- future_map_dfr(summary_mods_high_40, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank60_high <- future_map_dfr(summary_mods_high_60, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank80_high <- future_map_dfr(summary_mods_high_80, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-
-rank20_highlow <- future_map_dfr(summary_mods_highlow_20, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank30_highlow <- future_map_dfr(summary_mods_highlow_30, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank40_highlow <- future_map_dfr(summary_mods_highlow_40, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank60_highlow <- future_map_dfr(summary_mods_highlow_60, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-rank80_highlow <- future_map_dfr(summary_mods_highlow_80, 
-                              ~coef_rank_fn(.x), 
-                              .id = "sim",
-                              .progress = TRUE)
-beepr::beep()
-```
-
-### P(top regimen has steepest estimated slope)
-
-```{r fig.width = 13, fig.height = 5, fig.cap = "Frequentist summary of estimator performance across changes in sample size (nk) and differences in $\\log_{10}$(TTP) slope. For all panels, results are based on 1,000 simulated datasets were used for each sample size and condition. A) The proportion of simulations where a given arm was estimated to have the steepest slope. B) The proportion of simulations where the steepest estimated slope belonged to one of the true top two steepest arms. C) The proportion of simulations (y-axis) where the estimated 95\\% credible interval around the relative change in slope excludes zero (x-axis)."}
-
-p1 <- bind_rows(mutate(filter(rank20_even, rank >= 4), nk = 20, condition = "1 Winner"),
-                mutate(filter(rank30_even, rank >= 4), nk = 30, condition = "1 Winner"),
-                mutate(filter(rank40_even, rank >= 4), nk = 40, condition = "1 Winner"),
-                mutate(filter(rank60_even, rank >= 4), nk = 60, condition = "1 Winner"),
-                mutate(filter(rank80_even, rank >= 4), nk = 80, condition = "1 Winner"),
-                mutate(filter(rank20_high, rank >= 4), nk = 20, condition = "4 Winners"),
-                mutate(filter(rank30_high, rank >= 4), nk = 30, condition = "4 Winners"),
-                mutate(filter(rank40_high, rank >= 4), nk = 40, condition = "4 Winners"),
-                mutate(filter(rank60_high, rank >= 4), nk = 60, condition = "4 Winners"),
-                mutate(filter(rank80_high, rank >= 4), nk = 80, condition = "4 Winners"),
-                mutate(filter(rank20_highlow, rank >= 4), nk = 20, condition = "2 Winners"),
-                mutate(filter(rank30_highlow, rank >= 4), nk = 30, condition = "2 Winners"),
-                mutate(filter(rank40_highlow, rank >= 4), nk = 40, condition = "2 Winners"),
-                mutate(filter(rank60_highlow, rank >= 4), nk = 60, condition = "2 Winners"),
-                mutate(filter(rank80_highlow, rank >= 4), nk = 80, condition = "2 Winners")) %>% 
-  group_by(condition, nk, sim) %>% 
-  summarise(p.true.present = max(Regimen == "Regimen 5")) %>% 
-  group_by(condition, nk) %>% 
-  summarise(p.true.present = mean(p.true.present)) %>% 
-  mutate(condition = factor(condition, levels = c("1 Winner", "2 Winners", "4 Winners"))) %>% 
-  ggplot(aes(x = nk, y = p.true.present, lty = condition, col = condition)) + 
-  geom_hline(yintercept = 0.8,
-             lty = 2,
-             col = "darkgray") +
-  geom_line(size = 1) +
-  scale_color_manual(values = ucsf_col_pal) +
-  coord_cartesian(ylim = c(0,1)) +
-  scale_y_continuous(TeX("$p_1$"),
-                     breaks = seq(0,1,by = 0.2),
-                     labels = seq(0,1,by = 0.2)) +
-  scale_x_continuous(TeX("$n_k$")) +
-  ggpubr::theme_pubr() +
-  theme(legend.position = c(0.85, 0.2),
-        legend.title = element_blank(),
-        axis.title.y = element_blank())
-
-bind_rows(mutate(filter(rank20_even, rank >= 4), nk = 20, condition = "Even"),
-          mutate(filter(rank30_even, rank >= 4), nk = 30, condition = "Even"),
-          mutate(filter(rank40_even, rank >= 4), nk = 40, condition = "Even"),
-          mutate(filter(rank60_even, rank >= 4), nk = 60, condition = "Even"),
-          mutate(filter(rank80_even, rank >= 4), nk = 80, condition = "Even"),
-          mutate(filter(rank20_high, rank >= 4), nk = 20, condition = "High"),
-          mutate(filter(rank30_high, rank >= 4), nk = 30, condition = "High"),
-          mutate(filter(rank40_high, rank >= 4), nk = 40, condition = "High"),
-          mutate(filter(rank60_high, rank >= 4), nk = 60, condition = "High"),
-          mutate(filter(rank80_high, rank >= 4), nk = 80, condition = "High"),
-          mutate(filter(rank20_highlow, rank >= 4), nk = 20, condition = "High-low"),
-          mutate(filter(rank30_highlow, rank >= 4), nk = 30, condition = "High-low"),
-          mutate(filter(rank40_highlow, rank >= 4), nk = 40, condition = "High-low"),
-          mutate(filter(rank60_highlow, rank >= 4), nk = 60, condition = "High-low"),
-          mutate(filter(rank80_highlow, rank >= 4), nk = 80, condition = "High-low")) %>% 
-  group_by(condition, nk, sim) %>% 
-  summarise(p.true.present = max(Regimen == "Regimen 5")) %>% 
-  group_by(condition, nk) %>% 
-  summarise(p.true.present = mean(p.true.present)) %>% 
-  kable(digits = 3) %>% 
-  kable_styling()
-
-p2 <- bind_rows(mutate(filter(rank20_even, rank == 5), nk = 20, condition = "Even"),
-                mutate(filter(rank30_even, rank == 5), nk = 30, condition = "Even"),
-                mutate(filter(rank40_even, rank == 5), nk = 40, condition = "Even"),
-                mutate(filter(rank60_even, rank == 5), nk = 60, condition = "Even"),
-                mutate(filter(rank80_even, rank == 5), nk = 80, condition = "Even"),
-                mutate(filter(rank20_high, rank == 5), nk = 20, condition = "High"),
-                mutate(filter(rank30_high, rank == 5), nk = 30, condition = "High"),
-                mutate(filter(rank40_high, rank == 5), nk = 40, condition = "High"),
-                mutate(filter(rank60_high, rank == 5), nk = 60, condition = "High"),
-                mutate(filter(rank80_high, rank == 5), nk = 80, condition = "High"),
-                mutate(filter(rank20_highlow, rank == 5), nk = 20, condition = "High-low"),
-                mutate(filter(rank30_highlow, rank == 5), nk = 30, condition = "High-low"),
-                mutate(filter(rank40_highlow, rank == 5), nk = 40, condition = "High-low"),
-                mutate(filter(rank60_highlow, rank == 5), nk = 60, condition = "High-low"),
-                mutate(filter(rank80_highlow, rank == 5), nk = 80, condition = "High-low")) %>% 
-    mutate(condition = case_when(condition == "Even" ~ "1 Winner",
-                               condition == "High" ~ "4 Winners",
-                               TRUE ~ "2 Winners")) %>%
-  group_by(condition, nk, Regimen) %>% 
-  summarise(n = n()) %>% 
-  group_by(condition, nk) %>% 
-  summarise(prop = n/sum(n),
-            Regimen) %>% #kable() %>% kable_styling()
-  mutate(Regimen = factor(Regimen, levels = c(paste0("Regimen ", 1:5))),
-         theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(Regimen, "Regimen ")), ")}$"),
-         condition = factor(condition, levels = c("1 Winner", "2 Winners", "4 Winners"))) %>%
-  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
-  ggplot(aes(x = nk, y = prop, fill = theta)) + 
-  facet_wrap(~condition) +
-  geom_area(position = "stack") + #,
-            # alpha = 0.9) +
-  scale_fill_manual(values = ucsf_col_pal[1:5], 
-                    labels = TeX) +
-  coord_cartesian(ylim = c(0,1)) +
-  scale_y_continuous(TeX("$p_3$"),
-                     breaks = seq(0,1,by = 0.2),
-                     labels = seq(0,1,by = 0.2)) +
-  scale_x_continuous(TeX("$n_k$")) +
-  ggpubr::theme_pubr() +
-  theme(legend.position = c(0.9,0.22),
-        legend.title = element_blank(),
-        legend.margin = margin(0,2,1,1),
-        legend.direction = "vertical",
-        axis.title.y = element_blank())
-
-bind_rows(mutate(filter(rank20_even, rank == 5), nk = 20, condition = "Even"),
-                mutate(filter(rank30_even, rank == 5), nk = 30, condition = "Even"),
-                mutate(filter(rank40_even, rank == 5), nk = 40, condition = "Even"),
-                mutate(filter(rank60_even, rank == 5), nk = 60, condition = "Even"),
-                mutate(filter(rank80_even, rank == 5), nk = 80, condition = "Even"),
-                mutate(filter(rank20_high, rank == 5), nk = 20, condition = "High"),
-                mutate(filter(rank30_high, rank == 5), nk = 30, condition = "High"),
-                mutate(filter(rank40_high, rank == 5), nk = 40, condition = "High"),
-                mutate(filter(rank60_high, rank == 5), nk = 60, condition = "High"),
-                mutate(filter(rank80_high, rank == 5), nk = 80, condition = "High"),
-                mutate(filter(rank20_highlow, rank == 5), nk = 20, condition = "High-low"),
-                mutate(filter(rank30_highlow, rank == 5), nk = 30, condition = "High-low"),
-                mutate(filter(rank40_highlow, rank == 5), nk = 40, condition = "High-low"),
-                mutate(filter(rank60_highlow, rank == 5), nk = 60, condition = "High-low"),
-                mutate(filter(rank80_highlow, rank == 5), nk = 80, condition = "High-low")) %>% 
-  mutate(condition = case_when(condition == "Even" ~ "1 Winner",
-                               condition == "High" ~ "4 Winners",
-                               TRUE ~ "2 Winners")) %>%
-  group_by(condition, nk, Regimen) %>% 
-  summarise(n = n()) %>% 
-  group_by(condition, nk) %>% 
-  summarise(prop = n/sum(n),
-            Regimen) %>%
-  kable(digits = 3) %>% 
-  kable_styling()
-
-p3 <- bind_rows(mutate(rank20_even, nk = 20, condition = "Even"),
-          mutate(rank30_even, nk = 30, condition = "Even"),
-          mutate(rank40_even, nk = 40, condition = "Even"),
-          mutate(rank60_even, nk = 60, condition = "Even"),
-          mutate(rank80_even, nk = 80, condition = "Even"),
-          mutate(rank20_high, nk = 20, condition = "High"),
-          mutate(rank30_high, nk = 30, condition = "High"),
-          mutate(rank40_high, nk = 40, condition = "High"),
-          mutate(rank60_high, nk = 60, condition = "High"),
-          mutate(rank80_high, nk = 80, condition = "High"),
-          mutate(rank20_highlow, nk = 20, condition = "High-low"),
-          mutate(rank30_highlow, nk = 30, condition = "High-low"),
-          mutate(rank40_highlow, nk = 40, condition = "High-low"),
-          mutate(rank60_highlow, nk = 60, condition = "High-low"),
-          mutate(rank80_highlow, nk = 80, condition = "High-low")) %>% 
-  filter((Regimen == "Regimen 2" & condition == "High-low") |
-         (Regimen == "Regimen 2" & condition == "High") |
-         (Regimen != "Regimen 1" & condition == "Even")) %>% 
-  group_by(Regimen, nk, condition) %>% 
-  mutate(neq.control = mean(`l-95% CI` > 0)) %>% 
-  mutate(Slope = case_when(Regimen == "Regimen 2" & condition == "High-low" ~ "-10%",
-                           Regimen == "Regimen 2" & condition == "High" ~ "35%",
-                           Regimen == "Regimen 2" & condition == "Even" ~ "10%",
-                           Regimen == "Regimen 3" & condition == "Even" ~ "20%",
-                           Regimen == "Regimen 4" & condition == "Even" ~ "30%",
-                           Regimen == "Regimen 5" & condition == "Even" ~ "40%")) %>% 
-  mutate(Slope = factor(Slope, levels = c("-10%", "10%", "20%", "30%", "35%", "40%")),
-         Slope.num = as.numeric(str_remove(Slope, "%"))) %>% 
-  ggplot(aes(x = Slope.num, y = neq.control, col = as.factor(nk), lty = as.factor(nk))) + 
-  geom_hline(yintercept = 0.8, lty = 2, col = "darkgray") +
-  geom_line(aes(group = nk),
-            size = 1) +
-  scale_color_manual("nk", values = ucsf_col_pal) +
-  scale_linetype_manual("nk", values = 1:5) +
-  ggpubr::theme_pubr() + 
-  scale_y_continuous(TeX("$p_6$"),
-                     breaks = seq(0,1,by = 0.2),
-                     labels = seq(0,1,by = 0.2)) +
-  scale_x_continuous("Slope, %", 
-                     breaks = seq(-10,40,by = 10),
-                     labels = c("-10%", "0%", "10%", "20%", "30%", "40%")) +
-  theme(legend.position = c(0.9,0.22),
-        axis.title.y = element_blank(),
-        legend.title = element_blank())
-  
-p2 + p1 + p3 + 
-  plot_annotation(tag_levels = "A") 
-```
-
-```{r eval = FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", 
-                       paste0(Sys.Date(), "_panel-plot-frequentist-summaries.png")),
-       device = "png",
-       width = 13,
-       height = 5,
-       units = "in")
-
-ggsave(filename = here("graphs", "submission", "fig-02_panel-plot-frequentist-summaries.eps"),
-       device = "eps",
-       width = 13,
-       height = 5,
-       units = "in")
-```
-
-```{r eval = FALSE}
-p2 + p1 + p3 + 
-  plot_annotation(tag_levels = "A",
-                  title = "Dufault Fig. 2 (Top)") 
-
-ggsave(filename = here("graphs", "submission", "fig-02_panel-plot-frequentist-summaries_annotated.eps"),
-       dpi = 600,
-       device = "eps",
-       width = 13,
-       height = 5,
-       units = "in")
 ```
