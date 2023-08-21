@@ -2226,6 +2226,247 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
        device = "png")
 ```
 
+### New Attempt
+
+```{r}
+######################
+# Regimen 2 (Sub-optimal)
+######################
+
+data_shape_function <- function(relapse_data, tpp_data, ranking_data, nk_choice){
+  # Relapses
+  r1 <- relapse_data %>% # Situation 1: Regimen 2 - Sub-optimal
+    filter(ttp.condition == "highlow", regimen == "2") %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the sub-optimal relapse counts from each dataset.
+    dplyr::select(-regimen, -ttp.condition)
+  
+  r2 <- relapse_data %>% # Situation 1: Regimen 2 - Sub-optimal
+    filter(ttp.condition == "high", regimen == "2") %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the sub-optimal relapse counts from each dataset.
+    dplyr::select(-regimen, -ttp.condition)
+  
+  r3 <- relapse_data %>% # Situation 1: Regimen 2 - Sub-optimal
+    filter(ttp.condition == "even", regimen == "2") %>% 
+    dplyr::select(-regimen, -ttp.condition)
+  
+  # TPP Decision
+  tpp1 <- tpp_data %>% # -10% slope
+    filter(Regimen == "Regimen 1", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp2 <- tpp_data %>% # 10% slope
+    filter(Regimen == "Regimen 2", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp3 <- tpp_data %>% # 35% slope
+    filter(Regimen == "Regimen 3", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  
+  # Ranking
+  rank1 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm2") %>% # -10% slope
+    dplyr::select(-regimen)
+  rank2 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm3") %>% # 10% slope
+    dplyr::select(-regimen)
+  rank3 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm4") %>% # 35% slope
+    dplyr::select(-regimen)
+  
+  out1 <- full_join(
+    full_join(r1, tpp1), rank1) %>% 
+    mutate(true.slope = "-10%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out2 <- full_join(
+    full_join(r2, tpp2), rank2) %>% 
+    mutate(true.slope = "10%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out3 <- full_join(
+    full_join(r3, tpp3), rank3) %>% 
+    mutate(true.slope = "35%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out <- bind_rows(out1, out2, out3)
+  return(out)
+}
+
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 40)
+d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 60)
+d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+                           tpp_data = decisions$decisions_highlow,
+                           ranking_data = ranking_probabilities$highlow_probabilities,
+                           nk_choice = 80)
+
+p_suboptimal <- bind_rows(d20, d30, d40) %>% #, d60, d80) %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO") ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  group_by(true.slope, nk, decision) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar(aes(fill = decision),
+           stat = "identity") + 
+  facet_wrap(~true.slope) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+ggsave(filename = here("graphs", "simulation-results", 
+                       paste0(Sys.Date(), "_U4TB-decision-criteria-oc.png")),
+       device = "png",
+       height = 4,
+       width = 8,
+       units = "in")
+```
+
+```{r}
+data_shape_function_desirable <- function(relapse_data, tpp_data, ranking_data, nk_choice){
+  # Relapses
+  r1 <- relapse_data %>% # Situation 1: Regimen 5 - Desirable
+    filter(ttp.condition == "highlow", regimen == "5") %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the Desirable relapse counts from each dataset.
+    dplyr::select(-regimen, -ttp.condition)
+  
+  r2 <- relapse_data %>% # Situation 1: Regimen 5 - Desirable
+    filter(ttp.condition == "high", regimen == "5") %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the Desirable relapse counts from each dataset.
+    dplyr::select(-regimen, -ttp.condition)
+  
+  r3 <- relapse_data %>% # Situation 1: Regimen 5 - Desirable
+    filter(ttp.condition == "even", regimen == "5") %>% 
+    dplyr::select(-regimen, -ttp.condition)
+  
+  # TPP Decision
+  tpp1 <- tpp_data %>% # -10% slope
+    filter(Regimen == "Regimen 1", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp2 <- tpp_data %>% # 10% slope
+    filter(Regimen == "Regimen 2", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  tpp3 <- tpp_data %>% # 35% slope
+    filter(Regimen == "Regimen 3", nk == nk_choice) %>% # indexing sets control at 0
+    dplyr::select(-Regimen)
+  
+  # Ranking
+  rank1 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm2") %>% # -10% slope
+    dplyr::select(-regimen)
+  rank2 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm3") %>% # 10% slope
+    dplyr::select(-regimen)
+  rank3 <- map_dfr(filter(ranking_data, nk == nk_choice),
+                   ~.x, .id = "sim") %>% 
+    filter(regimen == "arm4") %>% # 35% slope
+    dplyr::select(-regimen)
+  
+  out1 <- full_join(
+    full_join(r1, tpp1), rank1) %>% 
+    mutate(true.slope = "-10%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out2 <- full_join(
+    full_join(r2, tpp2), rank2) %>% 
+    mutate(true.slope = "10%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out3 <- full_join(
+    full_join(r3, tpp3), rank3) %>% 
+    mutate(true.slope = "35%",
+           true.relapse = "sub-optimal",
+           nk = nk_choice)
+  out <- bind_rows(out1, out2, out3)
+  return(out)
+}
+
+d20_desirable <- data_shape_function_desirable(relapse_data = s95.sit1.20,
+                                     tpp_data = decisions$decisions_highlow,
+                                     ranking_data = ranking_probabilities$highlow_probabilities,
+                                     nk_choice = 20)
+d30_desirable <- data_shape_function_desirable(relapse_data = s95.sit1.30, 
+                                     tpp_data = decisions$decisions_highlow,
+                                     ranking_data = ranking_probabilities$highlow_probabilities,
+                                     nk_choice = 30)
+d40_desirable <- data_shape_function_desirable(relapse_data = s95.sit1.40, 
+                                     tpp_data = decisions$decisions_highlow,
+                                     ranking_data = ranking_probabilities$highlow_probabilities,
+                                     nk_choice = 40)
+d60_desirable <- data_shape_function_desirable(relapse_data = s95.sit1.60, 
+                                     tpp_data = decisions$decisions_highlow,
+                                     ranking_data = ranking_probabilities$highlow_probabilities,
+                                     nk_choice = 60)
+d80_desirable <- data_shape_function_desirable(relapse_data = s95.sit1.80, 
+                                     tpp_data = decisions$decisions_highlow,
+                                     ranking_data = ranking_probabilities$highlow_probabilities,
+                                     nk_choice = 80)
+
+p_desirable <- bind_rows(d20_desirable, d30_desirable, d40_desirable) %>% #, d60, d80) %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 > 0.8) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO") & p.subset.2 < 0.6) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  group_by(true.slope, nk, decision) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar(aes(fill = decision),
+           stat = "identity") + 
+  facet_wrap(~true.slope) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+```
+
+```{r}
+library(patchwork)
+p_suboptimal / p_desirable +
+  plot_annotation(tag_levels = "A") + 
+  plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+
+ggsave(filename = here("graphs", "simulation-results", 
+                       paste0(Sys.Date(), "_U4TB-decision-criteria-oc.png")),
+       device = "png",
+       height = 8,
+       width = 8,
+       units = "in")
+```
+
+
 ## Single Example
 
 ```{r relapse-single}
