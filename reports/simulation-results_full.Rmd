@@ -316,7 +316,7 @@ d_full %>%
               names_from = Decision) %>% 
   dplyr::select(-Regimen) %>% 
   kable(digits = 2,
-        caption = "Decision percentages when tau_LRV = tau_TV = 0.025") %>% 
+        caption = "Decision percentages when tau_MAV = tau_TV = 0.025") %>% 
   kable_styling() %>% 
   group_rows("Slope, %: -10%", start_row = 1, end_row = 5) %>% 
   group_rows("Slope, %: 10%", start_row = 6, end_row = 10) %>%
@@ -325,7 +325,7 @@ d_full %>%
   group_rows("Slope, %: 40%", start_row = 21, end_row = 25)
 ```
 
-```{r barplot-tpp-decisions, fig.width = 10, fig.height = 6, fig.cap = "When theta_lrv = 0, theta_TV = 20, tau_LRV = tau_TV = 0.025."}
+```{r barplot-tpp-decisions, fig.width = 10, fig.height = 6, fig.cap = "When theta_mav = 0, theta_TV = 20, tau_mav = tau_TV = 0.025."}
 d_full %>% 
   ggplot(aes(x = nk, y = Probability, fill = Decision)) + 
   geom_bar(stat = "identity") + 
@@ -337,7 +337,7 @@ d_full %>%
                     breaks = c("NO-GO", "Continue", "GO"),
                     labels = c("NO-GO", "Continue", "GO")) +
   xlab(TeX("$n_k$")) + 
-  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom")
 ```
@@ -363,7 +363,7 @@ d_full %>%
                     labels = c("NO-GO", "Continue", "GO")) +
   xlab(TeX("$n_k$")) + 
   ggtitle("Dufault Fig. 4 (Top)") +
-  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom")
 
@@ -381,16 +381,16 @@ ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_ann
 <!-- # names(nk) <- nk -->
 <!-- # decisions_2 <- future_map2_dfr(mcmc_even, nk, ~decision_function(.x, -->
 <!-- #                                                                nk = .y, -->
-<!-- #                                                                theta_lrv = 0, # in % -->
+<!-- #                                                                theta_mav = 0, # in % -->
 <!-- #                                                                theta_tv = 20, # in %  -->
-<!-- #                                                                tau_lrv = 0.05,  -->
+<!-- #                                                                tau_mav = 0.05,  -->
 <!-- #                                                                tau_tv = 0.05)) -->
 <!-- #  -->
 <!-- # decisions_highlow_2 <- future_map2_dfr(mcmc_highlow, nk, ~decision_function(.x, -->
 <!-- #                                                                           nk = .y, -->
-<!-- #                                                                           theta_lrv = 0, # in % -->
+<!-- #                                                                           theta_mav = 0, # in % -->
 <!-- #                                                                           theta_tv = 20, # in %  -->
-<!-- #                                                                           tau_lrv = 0.05,  -->
+<!-- #                                                                           tau_mav = 0.05,  -->
 <!-- #                                                                           tau_tv = 0.05)) -->
 <!-- # ``` -->
 
@@ -418,7 +418,7 @@ ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_ann
 <!--               names_from = Decision) %>% -->
 <!--   dplyr::select(-Regimen) %>% -->
 <!--   kable(digits = 2, -->
-<!--         caption = "Decision percentages when tau_LRV = tau_TV = 0.05") %>% -->
+<!--         caption = "Decision percentages when tau_MAV = tau_TV = 0.05") %>% -->
 <!--   kable_styling() %>% -->
 <!--   group_rows("Slope, %: -10%", start_row = 1, end_row = 5) %>% -->
 <!--   group_rows("Slope, %: 10%", start_row = 6, end_row = 10) %>% -->
@@ -431,38 +431,38 @@ ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_ann
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_even.RData"))
 ```
 
-```{r area-plot_different-tv-lrv-risk, eval = FALSE, cache = TRUE}
+```{r area-plot_different-tv-mav-risk, eval = FALSE, cache = TRUE}
 # 1 Winner
 tau_tv <- list(0.025, 0.025, 0.025, 0.025, 0.025)
 names(tau_tv) <- tau_tv
-tau_lrv <- list(0.025, 0.05, 0.1, 0.15, 0.2)
-names(tau_lrv) <- tau_lrv
+tau_mav <- list(0.025, 0.05, 0.1, 0.15, 0.2)
+names(tau_mav) <- tau_mav
 
 d30 <- NULL
-for (i in 1:length(tau_lrv)){
+for (i in 1:length(tau_mav)){
   out <- map_dfr(list(mcmc_mods_even_30),
                  ~decision_function(mcmc_list = .x,
                                     nk = 30,
-                                    theta_lrv = 0,
+                                    theta_mav = 0,
                                     theta_tv = 20,
-                                    tau_lrv = tau_lrv[[i]],
+                                    tau_mav = tau_mav[[i]],
                                     tau_tv = tau_tv[[i]]))
-  out <- out %>% mutate(tau_lrv = tau_lrv[[i]])
+  out <- out %>% mutate(tau_mav = tau_mav[[i]])
   d30 <- bind_rows(d30, out)
 }
 
 
 d30 %>% 
-  group_by(tau_lrv, Regimen, Decision) %>% 
+  group_by(tau_mav, Regimen, Decision) %>% 
   summarise(n = n()) %>% 
-  group_by(tau_lrv, Regimen) %>% 
+  group_by(tau_mav, Regimen) %>% 
   summarise(prop = n/sum(n),
             Decision = factor(Decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
   mutate(Regimen = case_when(Regimen == "Regimen 1" ~ "10%",
                              Regimen == "Regimen 2" ~ "20%",
                              Regimen == "Regimen 3" ~ "30%",
                              Regimen == "Regimen 4" ~ "40%")) %>% 
-  ggplot(aes(x = tau_lrv, y = prop, fill = Decision)) + 
+  ggplot(aes(x = tau_mav, y = prop, fill = Decision)) + 
   facet_wrap(~Regimen) +
   # geom_bar(stat="identity") + 
   geom_area() +
@@ -470,26 +470,26 @@ d30 %>%
                     breaks = c("NO-GO", "Continue", "GO"),
                     labels = c("NO-GO", "Continue", "GO")) +
   ggpubr::theme_pubr() + 
-  xlab(TeX("$\\tau_{LRV}")) +
+  xlab(TeX("$\\tau_{mav}")) +
   scale_y_continuous("Decision Probability",
                      breaks = seq(0,1,by = 0.1),
                      labels = seq(0,1,by = 0.1)) +
   theme(legend.position = "bottom")
 
 
-tau_lrv <- list(0.025, 0.025, 0.025, 0.025, 0.025)
-names(tau_lrv) <- tau_lrv
+tau_mav <- list(0.025, 0.025, 0.025, 0.025, 0.025)
+names(tau_mav) <- tau_mav
 tau_tv <- list(0.025, 0.05, 0.1, 0.15, 0.2)
 names(tau_tv) <- tau_tv
 
 d30_tv <- NULL
-for (i in 1:length(tau_lrv)){
+for (i in 1:length(tau_mav)){
   out <- map_dfr(list(mcmc_mods_even_30),
                  ~decision_function(mcmc_list = .x,
                                     nk = 30,
-                                    theta_lrv = 0,
+                                    theta_mav = 0,
                                     theta_tv = 20,
-                                    tau_lrv = tau_lrv[[i]],
+                                    tau_mav = tau_mav[[i]],
                                     tau_tv = tau_tv[[i]]))
   out <- out %>% mutate(tau_tv = tau_tv[[i]])
   d30_tv <- bind_rows(d30_tv, out)
@@ -524,12 +524,12 @@ d30_tv %>%
 
 ```{r }
 load(here("data", "analyzed", "ranking", "2022-07-07_ranking-probabilities.RData"))
+load(here("data", "analyzed", "ranking", "2022-07-07_compare-v-control.RData"))
 ```
 
 #### $\psi_1$: Comparing Against Control
 
 ```{r }
-load(here("data", "analyzed", "ranking", "2022-07-07_compare-v-control.RData"))
 
 p30 <- comparisons %>%
   filter(nk == "nk30") %>%
@@ -1037,7 +1037,7 @@ p1 <- ranking_probabilities$even_probabilities %>%
                    labels = c("Control", "10%", "20%", "30%", "40%")) +
   scale_color_manual(values = ucsf_col_pal) +
   scale_fill_manual(values = ucsf_col_pal) +
-  scale_y_continuous(TeX("P$\\left(\\theta \\in \\{\\theta_{(1)}, \\theta_{(2)}\\}\\right)$"),
+  scale_y_continuous(TeX("P$(\\theta \\in \\{\\theta_{(1)}, \\theta_{(2)}\\})$"),
                      breaks = seq(0,1,by = 0.2),
                      labels = seq(0,1,by = 0.2)) + 
   ggpubr::theme_pubr() +
@@ -1056,7 +1056,7 @@ p2 <- ranking_probabilities$highlow_probabilities %>%
                    labels = c("Control", "-10%", "10%", "35%", "40%")) +
   scale_color_manual(values = ucsf_col_pal) +
   scale_fill_manual(values = ucsf_col_pal) +
-  scale_y_continuous(TeX("P$\\left(\\theta \\in \\{\\theta_{(1)}, \\theta_{(2)}\\}\\right)$"),
+  scale_y_continuous(TeX("P$(\\theta \\in \\{\\theta_{(1)}, \\theta_{(2)}\\})$"),
                      breaks = seq(0,1,by = 0.2),
                      labels = seq(0,1,by = 0.2)) + 
   ggpubr::theme_pubr() +
@@ -1075,7 +1075,7 @@ p3 <- ranking_probabilities$high_probabilities %>%
                    labels = c("Control", "35%", "37%", "39%", "41%")) +
   scale_color_manual(values = ucsf_col_pal) +
   scale_fill_manual(values = ucsf_col_pal) +
-  scale_y_continuous(TeX("$\\psi_3 = Pr_{\\theta}\\left(\\theta \\in \\{\\theta_{(1)}, \\theta_{(2)}\\}|X\\right)$"),
+  scale_y_continuous(TeX("$\\psi_3 = Pr_{\\theta}(\\theta \\in \\{\\theta_{(1)}, \\theta_{(2)}\\}|X)$"),
                      breaks = seq(0,1,by = 0.2),
                      labels = seq(0,1,by = 0.2)) + 
   ggpubr::theme_pubr() +
@@ -1120,7 +1120,7 @@ temp3 <- ranking_probabilities$highlow_probabilities %>%
 p1 <- bind_rows(temp1, temp2, temp3) %>% 
   ggplot(aes(x = nk, y = p.greater.than, col = condition, lty = condition)) + 
   geom_line(size = 1) +
-  scale_y_continuous(TeX("Pr\\left($\\min\\{\\psi_{3,(1)},\\psi_{3,(2)}\\}$ > $\\max\\{\\psi_{3,(3)},\\psi_{3,(4)},\\psi_{3,(5)}\\}\\right)$"),
+  scale_y_continuous(TeX("Pr($\\min\\{\\psi_{3,(1)},\\psi_{3,(2)}\\}$ > $\\max\\{\\psi_{3,(3)},\\psi_{3,(4)},\\psi_{3,(5)}\\})$"),
                      breaks = seq(0,1,by = 0.2),
                      labels = seq(0,1,by = 0.2)) +
   scale_color_manual(values = ucsf_col_pal) +
@@ -2117,7 +2117,7 @@ library(ggpattern)
 data_shape_function <- function(relapse_data, relapse_regimen, tpp_data, ranking_data, nk_choice){
   # Relapses
   r1 <- relapse_data %>% # Situation 1: Regimen 2 - Sub-optimal, Regimen 3 - minimal, Regimen 4 - minimal, Regimen 5 - desirable
-    filter(ttp.condition == "highlow", regimen == relapse_regimen) %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. However, a unique relapse dataset was generated for each ttp condition so we will take advantage of this by pulling out the sub-optimal relapse counts from each dataset.
+    filter(ttp.condition == "highlow", regimen == relapse_regimen) %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. 
     dplyr::select(-regimen, -ttp.condition)
   
   # TPP Decision
@@ -2220,8 +2220,8 @@ p_suboptimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
   geom_bar_pattern(aes(fill = decision,
                        pattern = decision2),
                    pattern_color = "white",
-                   pattern_fill = "black",
-                   pattern_alpha = 0.5,
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
                    stat = "identity") + 
   scale_pattern_manual(values = c("none","stripe","circle"),
                        guide = "none") +
@@ -2233,7 +2233,7 @@ p_suboptimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
                     breaks = c("NO-GO", "Continue", "GO"),
                     labels = c("NO-GO", "Continue", "GO")) +
   xlab(TeX("$n_k$")) + 
-  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom",
         legend.title = element_blank(),
@@ -2269,7 +2269,7 @@ bind_rows(d20, d30, d40)  %>%
             start_row = 26,
             end_row = 33)
 
-p_suboptimal
+# p_suboptimal
 
 # Minimal
 d20 <- data_shape_function(relapse_data = s95.sit1.20,
@@ -2315,8 +2315,8 @@ p_minimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
   geom_bar_pattern(aes(fill = decision,
                        pattern = decision2),
                    pattern_color = "white",
-                   pattern_fill = "black",
-                   pattern_alpha = 0.5,
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
                    stat = "identity") + 
   scale_pattern_manual(values = c("none","stripe","circle"),
                        guide = "none") +
@@ -2328,12 +2328,12 @@ p_minimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
                     breaks = c("NO-GO", "Continue", "GO"),
                     labels = c("NO-GO", "Continue", "GO")) +
   xlab(TeX("$n_k$")) + 
-  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom",
         legend.title = element_blank(),
         axis.title.x = element_blank())
-p_minimal
+# p_minimal
 
 # Desirable
 d20 <- data_shape_function(relapse_data = s95.sit1.20,
@@ -2379,8 +2379,8 @@ p_desirable <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
   geom_bar_pattern(aes(fill = decision,
                        pattern = decision2),
                    pattern_color = "white",
-                   pattern_fill = "black",
-                   pattern_alpha = 0.5,
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
                    stat = "identity") + 
   scale_pattern_manual(values = c("none","stripe","circle"),
                        guide = "none") +
@@ -2392,7 +2392,7 @@ p_desirable <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
                     breaks = c("NO-GO", "Continue", "GO"),
                     labels = c("NO-GO", "Continue", "GO")) +
   xlab(TeX("$n_k$")) + 
-  # ggtitle("", subtitle = TeX("$\\theta_{LRV} = 0%, \\theta_{TV} = 20%, \\tau_{LRV} = \\tau_{TV} = 0.025$")) +
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom",
         legend.title = element_blank())
@@ -2413,8 +2413,10 @@ bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
   kable(digits = 3) %>% 
   kable_styling()
 
-p_desirable
+# p_desirable
+```
 
+```{r fig.height=10, fig.cap="Interim analysis decision probabilities for simulated arms with TTP slope relative to the control as specified in the panels (all corresponding to the `2 Winners` simulation setting) and unfavorable outcome rates of A) 10% (unfavorable), B) 5% (minimal), and C) 2.5% (desirable). Arms are flagged for a GO decision if they meet all the following conditions: fewer than 2 unfavorable outcomes, evidence of meeting the target product profile, and a posterior probability greater than 50% of ranking in the top two arms. A pattern is applied to differentiate the criterion responsible for NO-GO decisions. Arms are flagged for a NO-GO decision if they experience any of the following conditions: 2 or more unfavorable outcomes (stripes), do not have evidence of meeting the target product profile (dots), or meet both conditions (plain). All arms that do not meet the criteria for a GO or NO-GO decision, receive a “Continue” designation. Results are based on 1,000 simulated datasets per setting."}
 p_suboptimal / p_minimal / p_desirable + 
   plot_layout(guides = "collect") + 
   plot_annotation(tag_levels = "A") &
@@ -2460,28 +2462,38 @@ t_estimates <- df_single[,2:5] %>%
 ```
 
 ```{r}
-theta_lrv <- 0
+theta_mav <- 0
 theta_tv <- .2
-tau_lrv <- 0.025
+tau_mav <- 0.025
 tau_tv <- 0.025
 
-decision_function <- function(theta_lrv, theta_tv, tau_lrv, tau_tv, mcmc_chain){
+decision_function <- function(theta_mav, theta_tv, tau_mav, tau_tv, mcmc_chain){
   out <- mcmc_chain %>% 
     pivot_longer(names_to = "regimen",
                  values_to = "cred.est",
                  cols = everything()) %>% 
     group_by(regimen) %>% 
-    summarise(est.CI.l = quantile(cred.est, probs = tau_lrv),
+    summarise(est.CI.l = quantile(cred.est, probs = tau_mav),
               est.CI.u = quantile(cred.est, probs = 1-tau_tv))
   
   output <- out %>% 
     mutate(decision = case_when(est.CI.u <= theta_tv ~ "NO-GO",
-                                (est.CI.u > theta_tv & est.CI.l <= theta_lrv) ~ "Continue",
-                                (est.CI.u > theta_tv & est.CI.l > theta_lrv) ~ "GO"))
+                                (est.CI.u > theta_tv & est.CI.l <= theta_mav) ~ "Continue",
+                                (est.CI.u > theta_tv & est.CI.l > theta_mav) ~ "GO"))
+  
+  posterior.probs <- mcmc_chain %>% 
+    pivot_longer(names_to = "regimen",
+                 values_to = "cred.est",
+                 cols = everything()) %>% 
+    group_by(regimen) %>% 
+    summarise(p.theta.k.greater.theta.tv = mean(cred.est > theta_tv),
+              p.theta.k.greater.theta.mav = mean(cred.est > theta_mav))
+  
+  output <- full_join(output, posterior.probs)
   return(output)
 }
 
-t_tpp <- decision_function(theta_lrv = theta_lrv, theta_tv = theta_tv, tau_lrv = tau_lrv, tau_tv = tau_tv, mcmc_chain = df_single[,2:5]) 
+t_tpp <- decision_function(theta_mav = theta_mav, theta_tv = theta_tv, tau_mav = tau_mav, tau_tv = tau_tv, mcmc_chain = df_single[,2:5]) 
 ```
 
 ```{r}
@@ -2508,9 +2520,9 @@ t_relapse %>%
   mutate(regimen = str_remove(regimen, "arm"),
          Duration = c(26,rep(16,4)),
          nk = 30) %>% 
-  dplyr::select(Regimen = regimen, Duration = Duration, `No. patients` = nk, `No. relapses` = n_relapse_interim1, `$\\hat{\\theta}_{0.5}$` = est.median, `$\\hat{\\theta}_{0.025}$` = est.CI.l, `$\\hat{\\theta}_{0.975}$` = est.CI.u, `TPP decision` = decision, `$\\hat{\\psi}_1$` = p.greater.than.control, `$\\hat{\\psi}_2$` = p.subset.1, `$\\hat{\\psi}_3$` = p.subset.2) %>% 
+  dplyr::select(Regimen = regimen, Duration = Duration, `No. patients` = nk, `No. relapses` = n_relapse_interim1, `$\\hat{\\theta}_{0.5}$` = est.median, `$\\hat{\\theta}_{0.025}$` = est.CI.l, `$\\hat{\\theta}_{0.975}$` = est.CI.u, `$P(\\theta_k > \\theta_{MAV})$`=p.theta.k.greater.theta.mav, `$P(\\theta_k > \\theta_{TV})$`=p.theta.k.greater.theta.tv, `TPP decision` = decision, `$\\hat{\\psi}_1$` = p.greater.than.control, `$\\hat{\\psi}_2$` = p.subset.1, `$\\hat{\\psi}_3$` = p.subset.2) %>% 
   kable(digits = 3,
-        caption = "Interim results from a single simulated phase 2B study with thirty partients per regimen. The target product profile (TPP) assumes $\\theta_{LRV} = 0, \\theta_{TV} = 20, \\tau_{LRV} = \\tau_{TV} = 0.025$.") %>% 
+        caption = "Interim results from a single simulated phase 2B study with thirty partients per regimen. The target product profile (TPP) assumes $\\theta_{MAV} = 0, \\theta_{TV} = 20, \\tau_{MAV} = \\tau_{TV} = 0.025$.") %>% 
   kable_styling() %>% 
-  add_header_above(c(" " = 2, "Interim 1" = 9))
+  add_header_above(c(" " = 2, "Interim 1" = 11))
 ```
