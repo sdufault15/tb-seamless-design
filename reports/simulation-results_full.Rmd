@@ -2108,13 +2108,17 @@ ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-
 
 ### New Attempt
 
+::: {.panel-tabset}
+
+#### 2 Winners
+
 ```{r}
 ######################
 # Decision bar plot
 ######################
 library(ggpattern)
 
-data_shape_function <- function(relapse_data, relapse_regimen, tpp_data, ranking_data, nk_choice){
+data_shape_function <- function(relapse_data, relapse_regimen, true_slopes, tpp_data, ranking_data, nk_choice){
   # Relapses
   r1 <- relapse_data %>% # Situation 1: Regimen 2 - Sub-optimal, Regimen 3 - minimal, Regimen 4 - minimal, Regimen 5 - desirable
     filter(ttp.condition == "highlow", regimen == relapse_regimen) %>%  # TTP did not play a role in simulating relapse data. Selection of ttp condition is irrelevant to the relapses counted. 
@@ -2154,22 +2158,22 @@ data_shape_function <- function(relapse_data, relapse_regimen, tpp_data, ranking
   
   out1 <- full_join(
     full_join(r1, tpp1), rank1) %>% 
-    mutate(true.slope = "-10%",
+    mutate(true.slope = true_slopes[1],
            true.relapse = "sub-optimal",
            nk = nk_choice)
   out2 <- full_join(
     full_join(r1, tpp2), rank2) %>% 
-    mutate(true.slope = "10%",
+    mutate(true.slope = true_slopes[2],
            true.relapse = "sub-optimal",
            nk = nk_choice)
   out3 <- full_join(
     full_join(r1, tpp3), rank3) %>% 
-    mutate(true.slope = "35%",
+    mutate(true.slope = true_slopes[3],
            true.relapse = "sub-optimal",
            nk = nk_choice)
   out4 <- full_join(
     full_join(r1, tpp4), rank4) %>% 
-    mutate(true.slope = "40%",
+    mutate(true.slope = true_slopes[4],
            true.relapse = "sub-optimal",
            nk = nk_choice)
   
@@ -2181,27 +2185,30 @@ d20 <- data_shape_function(relapse_data = s95.sit1.20,
                            relapse_regimen = "2", # Sub-optimal
                            tpp_data = decisions$decisions_highlow,
                            ranking_data = ranking_probabilities$highlow_probabilities,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            nk_choice = 20)
 d30 <- data_shape_function(relapse_data = s95.sit1.30, 
                            relapse_regimen = "2", # Sub-optimal
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 30)
 d40 <- data_shape_function(relapse_data = s95.sit1.40, 
                            relapse_regimen = "2", # Sub-optimal
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 40)
-d60 <- data_shape_function(relapse_data = s95.sit1.60, 
-                           relapse_regimen = "2", # Sub-optimal
-                           tpp_data = decisions$decisions_highlow,
-                           ranking_data = ranking_probabilities$highlow_probabilities,
-                           nk_choice = 60)
-d80 <- data_shape_function(relapse_data = s95.sit1.80, 
-                           relapse_regimen = "2", # Sub-optimal
-                           tpp_data = decisions$decisions_highlow,
-                           ranking_data = ranking_probabilities$highlow_probabilities,
-                           nk_choice = 80)
+# d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+#                            relapse_regimen = "2", # Sub-optimal
+#                            tpp_data = decisions$decisions_highlow,
+#                            ranking_data = ranking_probabilities$highlow_probabilities,
+#                            nk_choice = 60)
+# d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+#                            relapse_regimen = "2", # Sub-optimal
+#                            tpp_data = decisions$decisions_highlow,
+#                            ranking_data = ranking_probabilities$highlow_probabilities,
+#                            nk_choice = 80)
 
 p_suboptimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
   mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
@@ -2276,27 +2283,30 @@ d20 <- data_shape_function(relapse_data = s95.sit1.20,
                            relapse_regimen = "3", # Minimal
                            tpp_data = decisions$decisions_highlow,
                            ranking_data = ranking_probabilities$highlow_probabilities,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            nk_choice = 20)
 d30 <- data_shape_function(relapse_data = s95.sit1.30, 
                            relapse_regimen = "3", # Minimal
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 30)
 d40 <- data_shape_function(relapse_data = s95.sit1.40, 
                            relapse_regimen = "3", # Minimal
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 40)
-d60 <- data_shape_function(relapse_data = s95.sit1.60, 
-                           relapse_regimen = "3", # Minimal
-                           tpp_data = decisions$decisions_highlow,
-                           ranking_data = ranking_probabilities$highlow_probabilities,
-                           nk_choice = 60)
-d80 <- data_shape_function(relapse_data = s95.sit1.80, 
-                           relapse_regimen = "3", # Minimal
-                           tpp_data = decisions$decisions_highlow,
-                           ranking_data = ranking_probabilities$highlow_probabilities,
-                           nk_choice = 80)
+# d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+#                            relapse_regimen = "3", # Minimal
+#                            tpp_data = decisions$decisions_highlow,
+#                            ranking_data = ranking_probabilities$highlow_probabilities,
+#                            nk_choice = 60)
+# d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+#                            relapse_regimen = "3", # Minimal
+#                            tpp_data = decisions$decisions_highlow,
+#                            ranking_data = ranking_probabilities$highlow_probabilities,
+#                            nk_choice = 80)
 
 p_minimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
   mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
@@ -2339,28 +2349,33 @@ p_minimal <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>%
 d20 <- data_shape_function(relapse_data = s95.sit1.20,
                            relapse_regimen = "5", # Desirable
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 20)
 d30 <- data_shape_function(relapse_data = s95.sit1.30, 
                            relapse_regimen = "5", # Desirable
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 30)
 d40 <- data_shape_function(relapse_data = s95.sit1.40, 
                            relapse_regimen = "5", # Desirable
                            tpp_data = decisions$decisions_highlow,
+                           true_slopes = c("-10%", "10%", "35%", "40%"),
                            ranking_data = ranking_probabilities$highlow_probabilities,
                            nk_choice = 40)
-d60 <- data_shape_function(relapse_data = s95.sit1.60, 
-                           relapse_regimen = "5", # Desirable
-                           tpp_data = decisions$decisions_highlow,
-                           ranking_data = ranking_probabilities$highlow_probabilities,
-                           nk_choice = 60)
-d80 <- data_shape_function(relapse_data = s95.sit1.80, 
-                           relapse_regimen = "5", # Desirable
-                           tpp_data = decisions$decisions_highlow,
-                           ranking_data = ranking_probabilities$highlow_probabilities,
-                           nk_choice = 80)
+# d60 <- data_shape_function(relapse_data = s95.sit1.60, 
+#                            relapse_regimen = "5", # Desirable
+#                            tpp_data = decisions$decisions_highlow,
+#                            true_slopes = c("-10%", "10%", "35%", "40%"),
+#                            ranking_data = ranking_probabilities$highlow_probabilities,
+#                            nk_choice = 60)
+# d80 <- data_shape_function(relapse_data = s95.sit1.80, 
+#                            relapse_regimen = "5", # Desirable
+#                            tpp_data = decisions$decisions_highlow,
+#                            true_slopes = c("-10%", "10%", "35%", "40%"),
+#                            ranking_data = ranking_probabilities$highlow_probabilities,
+#                            nk_choice = 80)
 
 p_desirable <- bind_rows(d20, d30, d40)  %>% #, d60, d80) %>% 
   mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
@@ -2432,6 +2447,387 @@ ggsave(filename = here("graphs", "submission", "fig-02_panel-oc-full-framework.p
        units = "in")
 ```
 
+#### 1 Winner
+
+```{r}
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_even,
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 40)
+
+p_suboptimal <- bind_rows(d20, d30, d40)  %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+# p_suboptimal
+
+# Minimal
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_even,
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 40)
+
+p_minimal <- bind_rows(d20, d30, d40)  %>%
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+# p_minimal
+
+# Desirable
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_even,
+                           true_slopes = c("10%", "20%", "30%", "40%"),
+                           ranking_data = ranking_probabilities$even_probabilities,
+                           nk_choice = 40)
+
+p_desirable <- bind_rows(d20, d30, d40)  %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+# p_desirable
+```
+
+```{r fig.height=10, fig.cap="Interim analysis decision probabilities for simulated arms with TTP slope relative to the control as specified in the panels (all corresponding to the `1 Winner` simulation setting) and unfavorable outcome rates of A) 10% (unfavorable), B) 5% (minimal), and C) 2.5% (desirable). Arms are flagged for a GO decision if they meet all the following conditions: fewer than 2 unfavorable outcomes, evidence of meeting the target product profile, and a posterior probability greater than 50% of ranking in the top two arms. A pattern is applied to differentiate the criterion responsible for NO-GO decisions. Arms are flagged for a NO-GO decision if they experience any of the following conditions: 2 or more unfavorable outcomes (stripes), do not have evidence of meeting the target product profile (dots), or meet both conditions (plain). All arms that do not meet the criteria for a GO or NO-GO decision, receive a “Continue” designation. Results are based on 1,000 simulated datasets per setting."}
+p_suboptimal / p_minimal / p_desirable + 
+  plot_layout(guides = "collect") + 
+  plot_annotation(tag_levels = "A") &
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#| eval: false
+ggsave(filename = here("graphs", "submission", "fig_panel-oc-full-framework_1-winner.png"),
+       device = "png",
+       height = 8,
+       width = 8,
+       units = "in")
+```
+
+#### 4 Winners
+
+```{r}
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "2", # Sub-optimal
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 40)
+
+p_suboptimal <- bind_rows(d20, d30, d40)  %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+# p_suboptimal
+
+# Minimal
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "3", # Minimal
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 40)
+
+p_minimal <- bind_rows(d20, d30, d40)  %>%
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+# p_minimal
+
+# Desirable
+d20 <- data_shape_function(relapse_data = s95.sit1.20,
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 20)
+d30 <- data_shape_function(relapse_data = s95.sit1.30, 
+                           relapse_regimen = "5", # Desirable
+                          tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 30)
+d40 <- data_shape_function(relapse_data = s95.sit1.40, 
+                           relapse_regimen = "5", # Desirable
+                           tpp_data = decisions$decisions_high,
+                           ranking_data = ranking_probabilities$high_probabilities,
+                           true_slopes = c("35%", "37%", "39%", "41%"),
+                           nk_choice = 40)
+
+p_desirable <- bind_rows(d20, d30, d40)  %>% 
+  mutate(decision = case_when((n_relapse_interim1 < 2 & Decision == "GO" & p.subset.2 >= 0.5) ~ "GO",
+                              ((n_relapse_interim1 >= 2) | (Decision == "NO-GO")) ~ "NO-GO",
+                              TRUE ~ "Continue")) %>% 
+  mutate(decision = factor(decision, levels = c("NO-GO", "Continue", "GO"))) %>% 
+  mutate(decision2 = case_when((decision == "NO-GO" & n_relapse_interim1 >= 2 & Decision != "NO-GO") ~ "Unfavorable outcome only",
+                               (decision == "NO-GO" & n_relapse_interim1 < 2 & Decision == "NO-GO") ~ "TPP only")) %>% 
+  group_by(true.slope, nk, decision, decision2) %>% 
+  mutate(decision2 = ifelse(is.na(decision2), "other", decision2)) %>% 
+  mutate(decision2 = factor(decision2, levels = c("other", "Unfavorable outcome only", "TPP only"))) %>% 
+  summarise(n = n()) %>% 
+  group_by(true.slope, nk) %>% 
+  mutate(prop = n/sum(n)) %>% 
+  ggplot(aes(x = as.factor(nk), y = prop)) + 
+  geom_bar_pattern(aes(fill = decision,
+                       pattern = decision2),
+                   pattern_color = "white",
+                   pattern_fill = "white",
+                   # pattern_alpha = 0.5,
+                   stat = "identity") + 
+  scale_pattern_manual(values = c("none","stripe","circle"),
+                       guide = "none") +
+  facet_wrap(~true.slope, nrow = 1) + 
+  scale_y_continuous("Decision Probability",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) +
+  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
+                    breaks = c("NO-GO", "Continue", "GO"),
+                    labels = c("NO-GO", "Continue", "GO")) +
+  xlab(TeX("$n_k$")) + 
+  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
+  ggpubr::theme_pubr() + 
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
+
+# p_desirable
+```
+
+```{r fig.height=10, fig.cap="Interim analysis decision probabilities for simulated arms with TTP slope relative to the control as specified in the panels (all corresponding to the `4 Winners` simulation setting) and unfavorable outcome rates of A) 10% (unfavorable), B) 5% (minimal), and C) 2.5% (desirable). Arms are flagged for a GO decision if they meet all the following conditions: fewer than 2 unfavorable outcomes, evidence of meeting the target product profile, and a posterior probability greater than 50% of ranking in the top two arms. A pattern is applied to differentiate the criterion responsible for NO-GO decisions. Arms are flagged for a NO-GO decision if they experience any of the following conditions: 2 or more unfavorable outcomes (stripes), do not have evidence of meeting the target product profile (dots), or meet both conditions (plain). All arms that do not meet the criteria for a GO or NO-GO decision, receive a “Continue” designation. Results are based on 1,000 simulated datasets per setting."}
+p_suboptimal / p_minimal / p_desirable + 
+  plot_layout(guides = "collect") + 
+  plot_annotation(tag_levels = "A") &
+  theme(legend.position = "bottom")
+```
+
+```{r}
+#| eval: false
+ggsave(filename = here("graphs", "submission", "fig_panel-oc-full-framework_4-winners.png"),
+       device = "png",
+       height = 8,
+       width = 8,
+       units = "in")
+```
+
+:::
 
 ## Single Example
 
