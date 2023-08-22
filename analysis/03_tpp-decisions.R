@@ -1,10 +1,17 @@
 ##################################
 # Run Target Product Profile
 # Suzanne Dufault
-# July 7, 2022
+# Aug 21, 2023
 ##################################
 
 # Data
+
+# # Null - NOT READY - Needs to be reworked
+# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
+# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_even.RData"))
+# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-40_even.RData"))
+# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-60_even.RData"))
+# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_even.RData"))
 
 # Even
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
