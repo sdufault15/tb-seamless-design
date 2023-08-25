@@ -6,7 +6,6 @@
 
 source(here("lib", "fixed-effects-function.R"))
 
-
 # Call in simulated TTP data
 files <- file.info(list.files("data/simulated-datasets", full.names = T))
 file_interest <- files[stringr::str_detect(rownames(files), "_simulated-df_no-winners-ttp.RData"),]
@@ -36,7 +35,7 @@ fixed_wrapper <- function(nkdata, d, k = 5){
   
   for (nk in 1:length(nkdata)){
     
-    nkd <- n_distinct(nkdata[[nk]]$patient.id)/5 # extract the number of patients per arm in this dataset
+    nkd <- n_distinct(nkdata[[nk]]$patient.id)/5 # extract the number of participants per arm in this dataset
     enroll.time.weeks <- (nkd*k*length(d))/10 # enrolling 10 participants per day, aiming for total sample size of nkd*k*d 
     
     temp <- fixed_effects_function(simdata = nkdata[[nk]],
