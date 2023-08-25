@@ -6,7 +6,7 @@
 
 library(here)
 library(brms)
-sims <- c(1:250)
+sims <- c(1:100)
 model <- as.formula("yij_censored | cens(censored) ~ 1 + week + week:arm + (1 + week | patient.id)")
 priors <- set_prior("normal(0,4)", class = "b")
 
