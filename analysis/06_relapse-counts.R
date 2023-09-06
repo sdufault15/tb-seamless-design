@@ -20,6 +20,7 @@ relapse_count_function <- function(simdf, buffer.weeks = 0){
     mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim_date$interim.week, 1, 
                                      ifelse(observed.relapse == 0, 0, 0))) %>% 
     mutate(Regimen = paste0("Regimen ", regimen),
+           Duration = factor(duration, levels = c(8,10,12,14,16,26)), 
            `TTP Followup` = max(week) + buffer.weeks) 
   
   counts <- temp %>% 
