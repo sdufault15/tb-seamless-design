@@ -1,0 +1,2253 @@
+---
+title: "Phase IIB Seamless Simulation Study Results"
+author: "Suzanne Dufault"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.path = "../graphs/simulation-results/")
+
+library(tidyverse)
+library(here)
+library(kableExtra)
+library(knitr)
+options(knitr.kable.NA = '')
+source(here("lib", "ucsf-color-palette.R"))
+
+library(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallelly::availableCores())
+```
+
+```{r log10ttp-data}
+# load(here("data","bayes-generated","2022-02-18_mcmc-mods_even_30_100.RData")) # this is the corresponding result for the sample dataset
+# 
+# mcmc_m1 <- mcmc_mods_even_30[[1]] # for demonstration
+```
+
+
+## Simulation Study Results {.tabset}
+
+### Conditions {.tabset .tabset-pills}
+
+#### Survival Conditions
+
+| Setting | Regimen | Characteristics |
+|:-------:|:-------:|:----------------|
+| 1 | 2 | suboptimal, relapse rate is twice that of the control regimen |
+| | 3,4 | minimal, relapse rate is the same as the control regimen |
+| | 5 | desirable, relapse rate is half that of the control regimen |
+| | | | |
+| 2 | 2-5 | all are desirable, relapse rate is half that of the control regimen |
+| 3 | 2-5 | all are minimal, relapse rate is the same as the control regimen |
+
+```{r out.width="33%"}
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-mixed.jpg"))
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-03_survival-curve-all-desirable.jpg"))
+knitr::include_graphics(here("graphs", "simulation-settings", "2022-03-04_survival-curve-all-minimal.jpg"))
+```
+
+#### log10(TTP) conditions
+
++ For each treatment arm, we will do a handful of hypothetical intervention effect sizes. These will be specified as percent change in slope *as compared to the control*.   
+  + $\{10\%,20\%,30\%,40\%\}$ (even relative increases by treatment arm)
+  + $\{-10\%,10\%,35\%,40\%\}$ (two are near the control arm, two are better. Can we distinguish the best?)
+  + $\{35\%, 37\%, 39\%, 41\%\}$
+
+![Visualization of conditions](../../phase2b-simstudy/graphs/simulation-results/lineplot_simulation-conditions-1.png)
+
+### Simulation Results {.tabset}
+
+#### Log10(TTP) Only {.tabset}
+
+```{r ttp-data}
+load(here("data", "analyzed", "2022-03-07_sim-level-ttp-results_nk30_4mo-duration.RData"))
+simlevel_ttp30 <- simlevel_ttp
+load(here("data", "analyzed", "2022-03-07_sim-level-ttp-results_nk40_4mo-duration.RData"))
+simlevel_ttp40 <- simlevel_ttp
+load(here("data", "analyzed", "2022-03-07_sim-level-ttp-results_nk60_4mo-duration.RData"))
+simlevel_ttp60 <- simlevel_ttp
+load(here("data", "analyzed", "2022-03-07_sim-level-ttp-results_nk80_4mo-duration.RData"))
+simlevel_ttp80 <- simlevel_ttp
+```
+
+For the sake of this simulation study, we will consider dropping regimens that fail to meet the following criteria:
+
+1. $\pi(\mu_k > \mu) \geq \alpha_1$. The probability that the slope for regimen $k$ is greater than the control slope must be at least $\alpha_1 = \{0.8, 0.9, 0.95\}$
+
+##### 30 per regimen
+
+```{r ttp-tab30}
+t30a <- simlevel_ttp30$even_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "10%",
+                         arm == "arm3" ~ "20%",
+                         arm == "arm4" ~ "30%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+t30b <- simlevel_ttp30$high_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "35%",
+                         arm == "arm3" ~ "37%",
+                         arm == "arm4" ~ "39%",
+                         arm == "arm5" ~ "41%",
+                         TRUE ~ arm))
+t30c <- simlevel_ttp30$highlow_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "-10%",
+                         arm == "arm3" ~ "10%",
+                         arm == "arm4" ~ "35%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+
+bind_rows(t30a, t30b,t30c) %>% 
+  mutate(arm = case_when(arm == "arm1" ~ "ref",
+                         TRUE ~ arm)) %>% 
+  rename("Log10(TTP) Characteristics" = arm) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("30 per regimen" = 1, "P(Continues based off of log10(TTP))" = 4)) %>% 
+  group_rows(group_label = "Slopes are evenly distributed", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "Slopes are clustered high", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "Slopes are clustered high and low", start_row = 11, end_row = 15)
+```
+
+
+##### 40 per regimen
+
+```{r ttp-tab40}
+t40a <- simlevel_ttp40$even_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "10%",
+                         arm == "arm3" ~ "20%",
+                         arm == "arm4" ~ "30%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+t40b <- simlevel_ttp40$high_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "35%",
+                         arm == "arm3" ~ "37%",
+                         arm == "arm4" ~ "39%",
+                         arm == "arm5" ~ "41%",
+                         TRUE ~ arm))
+t40c <- simlevel_ttp40$highlow_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "-10%",
+                         arm == "arm3" ~ "10%",
+                         arm == "arm4" ~ "35%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+
+bind_rows(t40a, t40b,t40c) %>% 
+  mutate(arm = case_when(arm == "arm1" ~ "ref",
+                         TRUE ~ arm)) %>% 
+  rename("Log10(TTP) Characteristics" = arm) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("40 per regimen" = 1, "P(Continues based off of log10(TTP))" = 4)) %>% 
+  group_rows(group_label = "Slopes are evenly distributed", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "Slopes are clustered high", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "Slopes are clustered high and low", start_row = 11, end_row = 15)
+```
+
+
+##### 60 per regimen
+
+```{r ttp-tab60}
+t60a <- simlevel_ttp60$even_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "10%",
+                         arm == "arm3" ~ "20%",
+                         arm == "arm4" ~ "60%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+t60b <- simlevel_ttp60$high_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "35%",
+                         arm == "arm3" ~ "37%",
+                         arm == "arm4" ~ "39%",
+                         arm == "arm5" ~ "41%",
+                         TRUE ~ arm))
+t60c <- simlevel_ttp60$highlow_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "-10%",
+                         arm == "arm3" ~ "10%",
+                         arm == "arm4" ~ "35%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+
+bind_rows(t60a, t60b,t60c) %>% 
+  mutate(arm = case_when(arm == "arm1" ~ "ref",
+                         TRUE ~ arm)) %>% 
+  rename("Log10(TTP) Characteristics" = arm) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("60 per regimen" = 1, "P(Continues based off of log10(TTP))" = 4)) %>% 
+  group_rows(group_label = "Slopes are evenly distributed", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "Slopes are clustered high", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "Slopes are clustered high and low", start_row = 11, end_row = 15)
+```
+
+##### 80 per regimen
+
+```{r ttp-tab80}
+t80a <- simlevel_ttp80$even_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "10%",
+                         arm == "arm3" ~ "20%",
+                         arm == "arm4" ~ "30%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+t80b <- simlevel_ttp80$high_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "35%",
+                         arm == "arm3" ~ "37%",
+                         arm == "arm4" ~ "39%",
+                         arm == "arm5" ~ "41%",
+                         TRUE ~ arm))
+t80c <- simlevel_ttp80$highlow_ttp %>% 
+  group_by(arm) %>% 
+  summarise(`P(better than control) > 0.8 and P(in top 2) > 0.8` = mean(continues.2criteria),
+            `P(better than control) > 0.8` = mean(continues.1criteria.80),
+            `P(better than control) > 0.9` = mean(continues.1criteria.90),
+            `P(better than control) > 0.95` = mean(continues.1criteria.95)) %>% 
+  mutate(arm = case_when(arm == "arm2" ~ "-10%",
+                         arm == "arm3" ~ "10%",
+                         arm == "arm4" ~ "35%",
+                         arm == "arm5" ~ "40%",
+                         TRUE ~ arm))
+
+bind_rows(t80a, t80b,t80c) %>% 
+  mutate(arm = case_when(arm == "arm1" ~ "ref",
+                         TRUE ~ arm)) %>% 
+  rename("Log10(TTP) Characteristics" = arm) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("80 per regimen" = 1, "P(Continues based off of log10(TTP))" = 4)) %>% 
+  group_rows(group_label = "Slopes are evenly distributed", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "Slopes are clustered high", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "Slopes are clustered high and low", start_row = 11, end_row = 15)
+```
+
+##### Figures
+
+```{r barplot-ttp-results, fig.width = 6, fig.height= 5}
+bind_rows(mutate(simlevel_ttp30$highlow_ttp, nk = 30),
+          mutate(simlevel_ttp40$highlow_ttp, nk = 40),
+          mutate(simlevel_ttp60$highlow_ttp, nk = 60),
+          mutate(simlevel_ttp80$highlow_ttp, nk = 80)) %>% 
+  filter(arm == "arm2" | arm == "arm3") %>% 
+  group_by(nk, arm) %>% 
+  summarise(`P(confidence < 0.8)` = mean(1 - continues.1criteria.80),
+            `P(confidence < 0.9)` = mean(1 - continues.1criteria.90),
+            `P(confidence < 0.95)` = mean(1 - continues.1criteria.95)) %>% 
+  pivot_longer(names_to = "comparison",
+               values_to = "prob",
+               cols = 3:5) %>% 
+  mutate(nk = factor(nk)) %>% 
+  ggplot(aes(x = arm, y = prob, fill = nk)) +
+  geom_bar(stat = "identity",
+           position = position_dodge(width = 0.5),
+           width = 0.45) + 
+  facet_wrap(~comparison) + 
+  theme_bw() + 
+  scale_y_continuous("P(stopped for futility)") + 
+  scale_x_discrete("TTP slope, relative to control",
+                   labels = c("-10%", "10%")) + 
+  scale_fill_manual(values = ucsf_col_pal)
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results", 
+                       paste0(Sys.Date(), "_barplot-ttp-results.png")),
+       device = "png",
+       width = 5, 
+       height = 5,
+       units = "in")
+```
+
+
+#### Relapse Only {.tabset}
+
+##### Tables {.tabset .tabset-pills}
+
+###### Mixed survival conditions
+
+```{r}
+# Situation 1, S(52) = .95
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk30_4mo-duration.RData"))
+s95.sit1.30 <- s95.situation1.results
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk40_4mo-duration.RData"))
+s95.sit1.40 <- s95.situation1.results
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk60_4mo-duration.RData"))
+s95.sit1.60 <- s95.situation1.results
+load(here("data","analyzed","2022-03-07_s95-situation1-results_nk80_4mo-duration.RData"))
+s95.sit1.80 <- s95.situation1.results
+
+# Situation 1, S(52) = .90
+load(here("data","analyzed","2022-03-07_s90-situation1-results_nk30_4mo-duration.RData"))
+s90.sit1.30 <- s90.situation1.results
+load(here("data","analyzed","2022-03-07_s90-situation1-results_nk40_4mo-duration.RData"))
+s90.sit1.40 <- s90.situation1.results
+load(here("data","analyzed","2022-03-07_s90-situation1-results_nk60_4mo-duration.RData"))
+s90.sit1.60 <- s90.situation1.results
+load(here("data","analyzed","2022-03-07_s90-situation1-results_nk80_4mo-duration.RData"))
+s90.sit1.80 <- s90.situation1.results
+
+# Situation 1, S(52) = .97
+load(here("data","analyzed","2022-03-07_s97-situation1-results_nk30_4mo-duration.RData"))
+s97.sit1.30 <- s97.situation1.results
+load(here("data","analyzed","2022-03-07_s97-situation1-results_nk40_4mo-duration.RData"))
+s97.sit1.40 <- s97.situation1.results
+load(here("data","analyzed","2022-03-07_s97-situation1-results_nk60_4mo-duration.RData"))
+s97.sit1.60 <- s97.situation1.results
+load(here("data","analyzed","2022-03-07_s97-situation1-results_nk80_4mo-duration.RData"))
+s97.sit1.80 <- s97.situation1.results
+```
+
+```{r}
+library(latex2exp)
+s95.sit1.all <- bind_rows(mutate(s95.sit1.30, nk = 30),
+                          mutate(s95.sit1.40, nk = 40),
+                          mutate(s95.sit1.60, nk = 60),
+                          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s95.sit1.all %>% 
+  arrange(regimen, nk) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c(" " = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "Control regimen (relapse rate = 5%)", start_row = 1, end_row = 4) %>% 
+  group_rows(group_label = "Sub-optimal regimen (relapse rate = 10%)", start_row = 5, end_row = 8) %>% 
+  group_rows(group_label = "Minimal regimen (relapse rate = 5%)", start_row = 9, end_row = 16) %>% 
+  group_rows(group_label = "Desirable regimen (relapse rate = 2.5%)", start_row = 17, end_row = 20)
+
+s90.sit1.all <- bind_rows(mutate(s90.sit1.30, nk = 30),
+                          mutate(s90.sit1.40, nk = 40),
+                          mutate(s90.sit1.60, nk = 60),
+                          mutate(s90.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s90.sit1.all %>% 
+  arrange(regimen, nk) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c(" " = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "Control regimen (relapse rate = 10%)", start_row = 1, end_row = 4) %>% 
+  group_rows(group_label = "Sub-optimal regimen (relapse rate = 20%)", start_row = 5, end_row = 8) %>% 
+  group_rows(group_label = "Minimal regimen (relapse rate = 10%)", start_row = 9, end_row = 16) %>% 
+  group_rows(group_label = "Desirable regimen (relapse rate = 5%)", start_row = 17, end_row = 20)
+
+s97.sit1.all <- bind_rows(mutate(s97.sit1.30, nk = 30),
+                          mutate(s97.sit1.40, nk = 40),
+                          mutate(s97.sit1.60, nk = 60),
+                          mutate(s97.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s97.sit1.all %>% 
+  arrange(regimen, nk) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c(" " = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "Control regimen (relapse rate = 3%)", start_row = 1, end_row = 4) %>% 
+  group_rows(group_label = "Sub-optimal regimen (relapse rate = 6%)", start_row = 5, end_row = 8) %>% 
+  group_rows(group_label = "Minimal regimen (relapse rate = 3%)", start_row = 9, end_row = 16) %>% 
+  group_rows(group_label = "Desirable regimen (relapse rate = 1.5%)", start_row = 17, end_row = 20)
+```
+
+###### All minimal
+
+```{r}
+# Situation 2, S(52) = .95
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk30_4mo-duration.RData"))
+s95.sit2.30 <- s95.situation2.results
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk40_4mo-duration.RData"))
+s95.sit2.40 <- s95.situation2.results
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk60_4mo-duration.RData"))
+s95.sit2.60 <- s95.situation2.results
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk80_4mo-duration.RData"))
+s95.sit2.80 <- s95.situation2.results
+
+# Situation 2, S(52) = .90
+load(here("data","analyzed","2022-03-07_s90-situation2-results_nk30_4mo-duration.RData"))
+s90.sit2.30 <- s90.situation2.results
+load(here("data","analyzed","2022-03-07_s90-situation2-results_nk40_4mo-duration.RData"))
+s90.sit2.40 <- s90.situation2.results
+load(here("data","analyzed","2022-03-07_s90-situation2-results_nk60_4mo-duration.RData"))
+s90.sit2.60 <- s90.situation2.results
+load(here("data","analyzed","2022-03-07_s90-situation2-results_nk80_4mo-duration.RData"))
+s90.sit2.80 <- s90.situation2.results
+
+# Situation 2, S(52) = .97
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk30_4mo-duration.RData"))
+s97.sit2.30 <- s97.situation2.results
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk40_4mo-duration.RData"))
+s97.sit2.40 <- s97.situation2.results
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk60_4mo-duration.RData"))
+s97.sit2.60 <- s97.situation2.results
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk80_4mo-duration.RData"))
+s97.sit2.80 <- s97.situation2.results
+```
+
+```{r}
+s95.sit2.all <- bind_rows(mutate(s95.sit2.30, nk = 30),
+                          mutate(s95.sit2.40, nk = 40),
+                          mutate(s95.sit2.60, nk = 60),
+                          mutate(s95.sit2.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s95.sit2.all %>% 
+  arrange(nk, regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("Relapse rate of 2.5%" = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "nk = 30", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "nk = 40", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "nk = 60", start_row = 11, end_row = 15) %>% 
+  group_rows(group_label = "nk = 80", start_row = 16, end_row = 20)
+
+s90.sit2.all <- bind_rows(mutate(s90.sit2.30, nk = 30),
+                          mutate(s90.sit2.40, nk = 40),
+                          mutate(s90.sit2.60, nk = 60),
+                          mutate(s90.sit2.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s90.sit2.all %>% 
+  arrange(nk, regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("Relapse rate of 5%" = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "nk = 30", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "nk = 40", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "nk = 60", start_row = 11, end_row = 15) %>% 
+  group_rows(group_label = "nk = 80", start_row = 16, end_row = 20)
+
+s97.sit2.all <- bind_rows(mutate(s97.sit2.30, nk = 30),
+                          mutate(s97.sit2.40, nk = 40),
+                          mutate(s97.sit2.60, nk = 60),
+                          mutate(s97.sit2.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s97.sit2.all %>% 
+  arrange(nk, regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("Relapse rate of 1.5%" = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "nk = 30", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "nk = 40", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "nk = 60", start_row = 11, end_row = 15) %>% 
+  group_rows(group_label = "nk = 80", start_row = 16, end_row = 20)
+```
+
+###### All desirable
+
+```{r}
+# Situation 3, S(52) = .95
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk30_4mo-duration.RData"))
+s95.sit3.30 <- s95.situation3.results
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk40_4mo-duration.RData"))
+s95.sit3.40 <- s95.situation3.results
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk60_4mo-duration.RData"))
+s95.sit3.60 <- s95.situation3.results
+load(here("data","analyzed","2022-03-07_s95-situation3-results_nk80_4mo-duration.RData"))
+s95.sit3.80 <- s95.situation3.results
+
+# Situation 3, S(52) = .90
+load(here("data","analyzed","2022-03-07_s90-situation3-results_nk30_4mo-duration.RData"))
+s90.sit3.30 <- s90.situation3.results
+load(here("data","analyzed","2022-03-07_s90-situation3-results_nk40_4mo-duration.RData"))
+s90.sit3.40 <- s90.situation3.results
+load(here("data","analyzed","2022-03-07_s90-situation3-results_nk60_4mo-duration.RData"))
+s90.sit3.60 <- s90.situation3.results
+load(here("data","analyzed","2022-03-07_s90-situation3-results_nk80_4mo-duration.RData"))
+s90.sit3.80 <- s90.situation3.results
+
+# Situation 3, S(52) = .97
+load(here("data","analyzed","2022-03-07_s97-situation3-results_nk30_4mo-duration.RData"))
+s97.sit3.30 <- s97.situation3.results
+load(here("data","analyzed","2022-03-07_s97-situation3-results_nk40_4mo-duration.RData"))
+s97.sit3.40 <- s97.situation3.results
+load(here("data","analyzed","2022-03-07_s97-situation3-results_nk60_4mo-duration.RData"))
+s97.sit3.60 <- s97.situation3.results
+load(here("data","analyzed","2022-03-07_s97-situation3-results_nk80_4mo-duration.RData"))
+s97.sit3.80 <- s97.situation3.results
+```
+
+```{r}
+s95.sit3.all <- bind_rows(mutate(s95.sit3.30, nk = 30),
+                          mutate(s95.sit3.40, nk = 40),
+                          mutate(s95.sit3.60, nk = 60),
+                          mutate(s95.sit3.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s95.sit3.all %>% 
+  arrange(nk, regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("Relapse rate of 5% (all)" = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "nk = 30", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "nk = 40", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "nk = 60", start_row = 11, end_row = 15) %>% 
+  group_rows(group_label = "nk = 80", start_row = 16, end_row = 20)
+
+s90.sit3.all <- bind_rows(mutate(s90.sit3.30, nk = 30),
+                          mutate(s90.sit3.40, nk = 40),
+                          mutate(s90.sit3.60, nk = 60),
+                          mutate(s90.sit3.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s90.sit3.all %>% 
+  arrange(nk, regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("Relapse rate of 10% (all)" = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "nk = 30", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "nk = 40", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "nk = 60", start_row = 11, end_row = 15) %>% 
+  group_rows(group_label = "nk = 80", start_row = 16, end_row = 20)
+
+s97.sit1.all <- bind_rows(mutate(s97.sit1.30, nk = 30),
+                          mutate(s97.sit1.40, nk = 40),
+                          mutate(s97.sit1.60, nk = 60),
+                          mutate(s97.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3))
+
+s97.sit1.all %>% 
+  arrange(nk, regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  add_header_above(c("Relapse rate of 3% (all)" = 2, "P(stopped for futility on the basis of relapse)" = 3)) %>% 
+  group_rows(group_label = "nk = 30", start_row = 1, end_row = 5) %>% 
+  group_rows(group_label = "nk = 40", start_row = 6, end_row = 10) %>% 
+  group_rows(group_label = "nk = 60", start_row = 11, end_row = 15) %>% 
+  group_rows(group_label = "nk = 80", start_row = 16, end_row = 20)
+```
+
+
+##### Figures {.tabset .tabset-pills}
+
+###### Sub-optimal regimen
+
+```{r lineplot_relapses-sub-optimal, fig.height=10, fig.width = 8}
+p1 <- s95.sit1.all %>% # pull out sub-optimal regimen
+  pivot_longer(cols = 3:5,
+               names_to = "Observed relapses",
+               values_to = "prob") %>% 
+  ggplot(aes(x = nk, y = prob, col = `Observed relapses`)) + 
+  geom_line(lwd = 1) + 
+  theme_bw() + 
+  scale_color_manual(values = ucsf_col_pal) + 
+  xlab(TeX("Sample size per regimen, $n_k")) + 
+  scale_y_continuous("P(stopped for futility)",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) + 
+  ggtitle("Interim 1 Analysis of Futility - Relapse", 
+          subtitle = "Sub-optimal regimen (relapse rate = 10%). Control relapse rate is 5%.")
+
+p2 <- s90.sit1.all %>% 
+  filter(regimen == 2) %>% # pull out sub-optimal regimen
+  pivot_longer(cols = 3:5,
+               names_to = "Observed relapses",
+               values_to = "prob") %>% 
+  ggplot(aes(x = nk, y = prob, col = `Observed relapses`)) + 
+  geom_line(lwd = 1) + 
+  theme_bw() + 
+  scale_color_manual(values = ucsf_col_pal) + 
+  xlab(TeX("Sample size per regimen, $n_k")) + 
+  scale_y_continuous("P(stopped for futility)",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) + 
+  ggtitle("Interim 1 Analysis of Futility - Relapse", 
+          subtitle = "Sub-optimal regimen (relapse rate = 20%). Control relapse rate is 10%.")
+
+p3 <-  s97.sit1.all %>% 
+  filter(regimen == 2) %>% # pull out sub-optimal regimen
+  pivot_longer(cols = 3:5,
+               names_to = "Observed relapses",
+               values_to = "prob") %>% 
+  ggplot(aes(x = nk, y = prob, col = `Observed relapses`)) + 
+  geom_line(lwd = 1) + 
+  theme_bw() + 
+  scale_color_manual(values = ucsf_col_pal) + 
+  xlab(TeX("Sample size per regimen, $n_k")) + 
+  scale_y_continuous("P(stopped for futility)",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) + 
+  ggtitle("Interim 1 Analysis of Futility - Relapse", 
+          subtitle = "Sub-optimal regimen (relapse rate = 6%). Control relapse rate is 3%.")
+
+ggpubr::ggarrange(p3, p1, p2, 
+                  ncol = 1,
+                  common.legend = TRUE)
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_relapses-sub-optimal.png")),
+       device = "png",
+       width = 6,
+       height = 5,
+       units = "in")
+```
+
+###### Minimal regimen
+
+```{r lineplot_relapses-minimal}
+library(latex2exp)
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3)) %>% 
+  filter(regimen == 3) %>% # pull out minimal regimen
+  pivot_longer(cols = 3:5,
+               names_to = "Observed relapses",
+               values_to = "prob") %>% 
+  ggplot(aes(x = nk, y = prob, col = `Observed relapses`)) + 
+  geom_line(lwd = 1) + 
+  theme_bw() + 
+  scale_color_manual(values = ucsf_col_pal) + 
+  xlab(TeX("Sample size per regimen, $n_k")) + 
+  coord_cartesian(ylim = c(0,1)) +
+  scale_y_continuous("P(stopped for futility)",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) + 
+  ggtitle("Interim 1 Analysis of Futility - Relapse", 
+          subtitle = "Minimal regimen (relapse rate = 5%). Control relapse rate is 5%.")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_relapses-minimal.png")),
+       device = "png",
+       width = 6,
+       height = 5,
+       units = "in")
+```
+
+
+##### Desirable regimen
+
+```{r lineplot_relapses-desirable}
+library(latex2exp)
+bind_rows(mutate(s95.sit1.30, nk = 30),
+          mutate(s95.sit1.40, nk = 40),
+          mutate(s95.sit1.60, nk = 60),
+          mutate(s95.sit1.80, nk = 80)) %>% 
+  group_by(nk, regimen) %>% 
+  summarise(`At least 1` = mean(n_relapse_interim1 >= 1),
+            `At least 2` = mean(n_relapse_interim1 >= 2),
+            `At least 3` = mean(n_relapse_interim1 >= 3)) %>% 
+  filter(regimen == 5) %>% # pull out desirable regimen
+  pivot_longer(cols = 3:5,
+               names_to = "Observed relapses",
+               values_to = "prob") %>% 
+  ggplot(aes(x = nk, y = prob, col = `Observed relapses`)) + 
+  geom_line(lwd = 1) + 
+  theme_bw() + 
+  scale_color_manual(values = ucsf_col_pal) + 
+  xlab(TeX("Sample size per regimen, $n_k")) + 
+  scale_y_continuous("P(stopped for futility)",
+                     breaks = seq(0,1,by = 0.1),
+                     labels = seq(0,1,by = 0.1)) + 
+  coord_cartesian(ylim = c(0,1)) +
+  ggtitle("Interim 1 Analysis of Futility - Relapse", 
+          subtitle = "Desirable regimen (relapse rate = 2.5%). Control relapse rate is 5%.")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_relapses-desirable.png")),
+       device = "png",
+       width = 6,
+       height = 5,
+       units = "in")
+```
+
+
+#### Log10(TTP) and Relapse
+
+```{r}
+simlevel_ttp30 <- bind_rows(mutate(simlevel_ttp30$even_ttp, ttp.condition = "even"),
+                            mutate(simlevel_ttp30$high_ttp, ttp.condition = "high"),
+                            mutate(simlevel_ttp30$highlow_ttp, ttp.condition = "highlow")) %>% 
+  mutate(regimen = str_remove(arm, "arm"))
+
+simlevel_ttp40 <- bind_rows(mutate(simlevel_ttp40$even_ttp, ttp.condition = "even"),
+                            mutate(simlevel_ttp40$high_ttp, ttp.condition = "high"),
+                            mutate(simlevel_ttp40$highlow_ttp, ttp.condition = "highlow")) %>% 
+  mutate(regimen = str_remove(arm, "arm"))
+
+simlevel_ttp60 <- bind_rows(mutate(simlevel_ttp60$even_ttp, ttp.condition = "even"),
+                            mutate(simlevel_ttp60$high_ttp, ttp.condition = "high"),
+                            mutate(simlevel_ttp60$highlow_ttp, ttp.condition = "highlow")) %>% 
+  mutate(regimen = str_remove(arm, "arm"))
+
+simlevel_ttp80 <- bind_rows(mutate(simlevel_ttp80$even_ttp, ttp.condition = "even"),
+                            mutate(simlevel_ttp80$high_ttp, ttp.condition = "high"),
+                            mutate(simlevel_ttp80$highlow_ttp, ttp.condition = "highlow")) %>% 
+  mutate(regimen = str_remove(arm, "arm"))
+```
+
+```{r}
+# Situation 1
+df_30 <- full_join(simlevel_ttp30, 
+                   s95.sit1.30) %>% 
+  mutate(nk = 30)
+df_40 <- full_join(simlevel_ttp40, 
+                   s95.sit1.40) %>% 
+  mutate(nk = 40)
+df_60 <- full_join(simlevel_ttp60, 
+                   s95.sit1.60) %>% 
+  mutate(nk = 60)
+df_80 <- full_join(simlevel_ttp80, 
+                   s95.sit1.80) %>% 
+  mutate(nk = 80)
+
+bind_rows(df_30,
+          df_40,
+          df_60,
+          df_80) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8, >= 1 relapse)` = mean(continues.1criteria.80 == 0 & n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8, >= 2 relapse)` = mean(continues.1criteria.80 == 0 & n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8, >= 3 relapse)` = mean(continues.1criteria.80 == 0 & n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(regimen == 1 ~ "ref",
+                                 (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ "10%",
+                                 ttp.condition == "even" & regimen == 3 ~ "20%",
+                                 ttp.condition == "even" & regimen == 4 ~ "30%",
+                                 (ttp.condition == "even" & regimen == 5) | 
+                                   (ttp.condition == "highlow" & regimen == 5) ~ "40%",
+                                 ttp.condition == "highlow" & regimen == 2 ~ "-10%",
+                                 (ttp.condition == "highlow" & regimen == 4) | 
+                                   (ttp.condition == "high" & regimen == 2) ~ "35%",
+                                 ttp.condition == "high" & regimen == 3 ~ "37%",
+                                 ttp.condition == "high" & regimen == 4 ~ "39%",
+                                 ttp.condition == "high" & regimen == 5 ~ "41%"),
+         .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "5%",
+                                    regimen == 2 ~ "10%",
+                                    regimen %in% c(3,4) ~ "5%",
+                                    regimen == 5 ~ "2.5%"),
+         .before = 2) %>% 
+  mutate(Regimen = ifelse(regimen == 1, "Control", paste0("Regimen ", regimen)),
+         .before = 3) %>% 
+  ungroup() %>% 
+  dplyr::select(-ttp.condition, -regimen, -`TTP Slope`, -`Relapse rate`, - Regimen) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:3) %>% 
+  group_rows(group_label = "Even (TTP). Mixed relapse rates.",
+             start_row = 1,
+             end_row = 20,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 1,
+           end_row = 4) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 10%, relapse rate = 10%)",
+           start_row = 5,
+           end_row = 8) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 20%, relapse rate = 5%)",
+           start_row = 9,
+           end_row = 12) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 30%, relapse rate = 5%)",
+           start_row = 13,
+           end_row = 16) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 2.5%)",
+           start_row = 17,
+           end_row = 20) %>% 
+  group_rows(group_label = "High (TTP). Mixed relapse rates.",
+             start_row = 21,
+             end_row = 40,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 21,
+           end_row = 24) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 35%, relapse rate = 10%)",
+           start_row = 25,
+           end_row = 28) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 37%, relapse rate = 5%)",
+           start_row = 29,
+           end_row = 32) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 39%, relapse rate = 5%)",
+           start_row = 33,
+           end_row = 36) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 41%, relapse rate = 2.5%)",
+           start_row = 37,
+           end_row = 40) %>% 
+  group_rows(group_label = "High-low (TTP)",
+             start_row = 41,
+             end_row = 60,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 41,
+           end_row = 44) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = -10%, relapse rate = 10%)",
+           start_row = 45,
+           end_row = 48) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 10%, relapse rate = 5%)",
+           start_row = 49,
+           end_row = 52) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 35%, relapse rate = 5%)",
+           start_row = 53,
+           end_row = 56) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 2.5%)",
+           start_row = 57,
+           end_row = 60) 
+```
+
+#### Log10(TTP) OR Relapse {.tabset}
+
+##### Mixed Relapse Rates {.tabset .tabset-pills}
+
+###### Figures
+
+<!-- From left to right, these figures display the probabilities of stopping a regimen for futility on the basis of failing to meet a TTP slope threshold or the occurrence of a given number of relapses by interim 1.     -->
+
+<!-- + **Control relapse rate = 3%** -->
+<!-- + **Control relapse rate = 5%** -->
+<!-- + **Control relapse rate = 10%** -->
+
+```{r, out.width = "33%"}
+# munge/80_generate-pointplots_prob-stopping.R
+include_graphics(path = here("graphs", "simulation-results", "2022-04-06_point-plot_prob-stop-for-futility_relapse-rate-3perc.png"))
+include_graphics(path = here("graphs", "simulation-results", "2022-04-06_point-plot_prob-stop-for-futility_relapse-rate-5perc.png"))
+include_graphics(path = here("graphs", "simulation-results", "2022-04-06_point-plot_prob-stop-for-futility_relapse-rate-10perc.png"))
+```
+
+```{r, out.width = "33%"}
+# munge/81_generate-roc-plots_stopping.R
+include_graphics(path = here("graphs", "simulation-results", "2022-04-06_roc-futility_relapse-rate-3.png"))
+include_graphics(path = here("graphs", "simulation-results", "2022-04-06_roc-futility_relapse-rate-5.png"))
+include_graphics(path = here("graphs", "simulation-results", "2022-04-06_roc-futility_relapse-rate-10.png"))
+```
+
+###### Control Relapse Rate 5%
+
+```{r}
+# Situation 1
+df_30 <- full_join(simlevel_ttp30, 
+                   s95.sit1.30) %>% 
+  mutate(nk = 30)
+df_40 <- full_join(simlevel_ttp40, 
+                   s95.sit1.40) %>% 
+  mutate(nk = 40)
+df_60 <- full_join(simlevel_ttp60, 
+                   s95.sit1.60) %>% 
+  mutate(nk = 60)
+df_80 <- full_join(simlevel_ttp80, 
+                   s95.sit1.80) %>% 
+  mutate(nk = 80)
+
+bind_rows(df_30,
+          df_40,
+          df_60,
+          df_80) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(regimen == 1 ~ "ref",
+                                 (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ "10%",
+                                 ttp.condition == "even" & regimen == 3 ~ "20%",
+                                 ttp.condition == "even" & regimen == 4 ~ "30%",
+                                 (ttp.condition == "even" & regimen == 5) | 
+                                   (ttp.condition == "highlow" & regimen == 5) ~ "40%",
+                                 ttp.condition == "highlow" & regimen == 2 ~ "-10%",
+                                 (ttp.condition == "highlow" & regimen == 4) | 
+                                   (ttp.condition == "high" & regimen == 2) ~ "35%",
+                                 ttp.condition == "high" & regimen == 3 ~ "37%",
+                                 ttp.condition == "high" & regimen == 4 ~ "39%",
+                                 ttp.condition == "high" & regimen == 5 ~ "41%"),
+         .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "5%",
+                                    regimen == 2 ~ "10%",
+                                    regimen %in% c(3,4) ~ "5%",
+                                    regimen == 5 ~ "2.5%"),
+         .before = 2) %>% 
+  mutate(Regimen = ifelse(regimen == 1, "Control", paste0("Regimen ", regimen)),
+         .before = 3) %>% 
+  ungroup() %>% 
+  dplyr::select(-ttp.condition, -regimen, -`TTP Slope`, -`Relapse rate`, - Regimen) %>% 
+  kable(digits = 2,
+        caption = "Probability of stopping a regimen for futility based on the specified thresholds. Note, this assumes the regimens have mixed relapse rates (specified in each row) and that the control regimen has a relapse rate of 5%. The goal is to stop suboptimal regimens frequently and minimal/desirable regimens infrequently.") %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:3) %>% 
+  group_rows(group_label = "Even (TTP). Mixed relapse rates.",
+             start_row = 1,
+             end_row = 20,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 1,
+           end_row = 4) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 10%, relapse rate = 10%)",
+           start_row = 5,
+           end_row = 8) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 20%, relapse rate = 5%)",
+           start_row = 9,
+           end_row = 12) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 30%, relapse rate = 5%)",
+           start_row = 13,
+           end_row = 16) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 2.5%)",
+           start_row = 17,
+           end_row = 20) %>% 
+  group_rows(group_label = "High (TTP). Mixed relapse rates.",
+             start_row = 21,
+             end_row = 40,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 21,
+           end_row = 24) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 35%, relapse rate = 10%)",
+           start_row = 25,
+           end_row = 28) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 37%, relapse rate = 5%)",
+           start_row = 29,
+           end_row = 32) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 39%, relapse rate = 5%)",
+           start_row = 33,
+           end_row = 36) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 41%, relapse rate = 2.5%)",
+           start_row = 37,
+           end_row = 40) %>% 
+  group_rows(group_label = "High-low (TTP)",
+             start_row = 41,
+             end_row = 60,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 41,
+           end_row = 44) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = -10%, relapse rate = 10%)",
+           start_row = 45,
+           end_row = 48) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 10%, relapse rate = 5%)",
+           start_row = 49,
+           end_row = 52) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 35%, relapse rate = 5%)",
+           start_row = 53,
+           end_row = 56) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 2.5%)",
+           start_row = 57,
+           end_row = 60) 
+```
+
+###### Control Relapse Rate 10%
+
+```{r}
+# Situation 1
+df_30 <- full_join(simlevel_ttp30, 
+                   s90.sit1.30) %>% 
+  mutate(nk = 30)
+df_40 <- full_join(simlevel_ttp40, 
+                   s90.sit1.40) %>% 
+  mutate(nk = 40)
+df_60 <- full_join(simlevel_ttp60, 
+                   s90.sit1.60) %>% 
+  mutate(nk = 60)
+df_80 <- full_join(simlevel_ttp80, 
+                   s90.sit1.80) %>% 
+  mutate(nk = 80)
+
+bind_rows(df_30,
+          df_40,
+          df_60,
+          df_80) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(regimen == 1 ~ "ref",
+                                 (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ "10%",
+                                 ttp.condition == "even" & regimen == 3 ~ "20%",
+                                 ttp.condition == "even" & regimen == 4 ~ "30%",
+                                 (ttp.condition == "even" & regimen == 5) | 
+                                   (ttp.condition == "highlow" & regimen == 5) ~ "40%",
+                                 ttp.condition == "highlow" & regimen == 2 ~ "-10%",
+                                 (ttp.condition == "highlow" & regimen == 4) | 
+                                   (ttp.condition == "high" & regimen == 2) ~ "35%",
+                                 ttp.condition == "high" & regimen == 3 ~ "37%",
+                                 ttp.condition == "high" & regimen == 4 ~ "39%",
+                                 ttp.condition == "high" & regimen == 5 ~ "41%"),
+         .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "10%",
+                                    regimen == 2 ~ "20%",
+                                    regimen %in% c(3,4) ~ "10%",
+                                    regimen == 5 ~ "5%"),
+         .before = 2) %>% 
+  mutate(Regimen = ifelse(regimen == 1, "Control", paste0("Regimen ", regimen)),
+         .before = 3) %>% 
+  ungroup() %>% 
+  dplyr::select(-ttp.condition, -regimen, -`TTP Slope`, -`Relapse rate`, - Regimen) %>% 
+  filter(nk %in% c(30,60)) %>% 
+  kable(digits = 2,
+        caption = "Probability of stopping a regimen for futility based on the specified thresholds. Note, this assumes the regimens have mixed relapse rates (specified in each row) and that the control regimen has a relapse rate of 10%. The goal is to stop suboptimal regimens frequently and minimal/desirable regimens infrequently.") %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:3) %>% 
+  group_rows(group_label = "Even (TTP). Mixed relapse rates.",
+             start_row = 1,
+             end_row = 10,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 10%)",
+           start_row = 1,
+           end_row = 2) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 10%, relapse rate = 20%)",
+           start_row = 3,
+           end_row = 4) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 20%, relapse rate = 10%)",
+           start_row = 5,
+           end_row = 6) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 30%, relapse rate = 10%)",
+           start_row = 7,
+           end_row = 8) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 5%)",
+           start_row = 9,
+           end_row = 10) %>% 
+  group_rows(group_label = "High (TTP). Mixed relapse rates.",
+             start_row = 11,
+             end_row = 20,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 10%)",
+           start_row = 11,
+           end_row = 12) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 35%, relapse rate = 20%)",
+           start_row = 13,
+           end_row = 14) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 37%, relapse rate = 10%)",
+           start_row = 15,
+           end_row = 16) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 39%, relapse rate = 10%)",
+           start_row = 17,
+           end_row = 18) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 41%, relapse rate = 5%)",
+           start_row = 19,
+           end_row = 20) %>% 
+  group_rows(group_label = "High-low (TTP)",
+             start_row = 21,
+             end_row = 30,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 10%)",
+           start_row = 21,
+           end_row = 22) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = -10%, relapse rate = 20%)",
+           start_row = 23,
+           end_row = 24) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 10%, relapse rate = 10%)",
+           start_row = 25,
+           end_row = 26) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 35%, relapse rate = 10%)",
+           start_row = 27,
+           end_row = 28) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 5%)",
+           start_row = 29,
+           end_row = 30) 
+```
+
+###### Control Relapse Rate 3%
+
+```{r}
+# Situation 1
+df_30 <- full_join(simlevel_ttp30, 
+                   s97.sit1.30) %>% 
+  mutate(nk = 30)
+df_40 <- full_join(simlevel_ttp40, 
+                   s97.sit1.40) %>% 
+  mutate(nk = 40)
+df_60 <- full_join(simlevel_ttp60, 
+                   s97.sit1.60) %>% 
+  mutate(nk = 60)
+df_80 <- full_join(simlevel_ttp80, 
+                   s97.sit1.80) %>% 
+  mutate(nk = 80)
+
+bind_rows(df_30,
+          df_40,
+          df_60,
+          df_80) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(regimen == 1 ~ "ref",
+                                 (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ "10%",
+                                 ttp.condition == "even" & regimen == 3 ~ "20%",
+                                 ttp.condition == "even" & regimen == 4 ~ "30%",
+                                 (ttp.condition == "even" & regimen == 5) | 
+                                   (ttp.condition == "highlow" & regimen == 5) ~ "40%",
+                                 ttp.condition == "highlow" & regimen == 2 ~ "-10%",
+                                 (ttp.condition == "highlow" & regimen == 4) | 
+                                   (ttp.condition == "high" & regimen == 2) ~ "35%",
+                                 ttp.condition == "high" & regimen == 3 ~ "37%",
+                                 ttp.condition == "high" & regimen == 4 ~ "39%",
+                                 ttp.condition == "high" & regimen == 5 ~ "41%"),
+         .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "3%",
+                                    regimen == 2 ~ "6%",
+                                    regimen %in% c(3,4) ~ "3%",
+                                    regimen == 5 ~ "1.5%"),
+         .before = 2) %>% 
+  mutate(Regimen = ifelse(regimen == 1, "Control", paste0("Regimen ", regimen)),
+         .before = 3) %>% 
+  ungroup() %>% 
+  dplyr::select(-ttp.condition, -regimen, -`TTP Slope`, -`Relapse rate`, - Regimen) %>% 
+  filter(nk %in% c(30,60)) %>% 
+  kable(digits = 2,
+        caption = "Probability of stopping a regimen for futility based on the specified thresholds. Note, this assumes the regimens have mixed relapse rates (specified in each row) and that the control regimen has a relapse rate of 3%. The goal is to stop suboptimal regimens frequently and minimal/desirable regimens infrequently.") %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:3) %>% 
+  group_rows(group_label = "Even (TTP). Mixed relapse rates.",
+             start_row = 1,
+             end_row = 10,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 3%)",
+           start_row = 1,
+           end_row = 2) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 10%, relapse rate = 6%)",
+           start_row = 3,
+           end_row = 4) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 20%, relapse rate = 3%)",
+           start_row = 5,
+           end_row = 6) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 30%, relapse rate = 3%)",
+           start_row = 7,
+           end_row = 8) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 1.5%)",
+           start_row = 9,
+           end_row = 10) %>% 
+  group_rows(group_label = "High (TTP). Mixed relapse rates.",
+             start_row = 11,
+             end_row = 20,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 3%)",
+           start_row = 11,
+           end_row = 12) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = 35%, relapse rate = 6%)",
+           start_row = 13,
+           end_row = 14) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 37%, relapse rate = 3%)",
+           start_row = 15,
+           end_row = 16) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 39%, relapse rate = 3%)",
+           start_row = 17,
+           end_row = 18) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 41%, relapse rate = 1.5%)",
+           start_row = 19,
+           end_row = 20) %>% 
+  group_rows(group_label = "High-low (TTP)",
+             start_row = 21,
+             end_row = 30,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 3%)",
+           start_row = 21,
+           end_row = 22) %>% 
+  group_rows(group_label = "Regimen 1: suboptimal (TTP slope = -10%, relapse rate = 6%)",
+           start_row = 23,
+           end_row = 24) %>% 
+  group_rows(group_label = "Regimen 2: minimal (TTP slope = 10%, relapse rate = 3%)",
+           start_row = 25,
+           end_row = 26) %>%
+  group_rows(group_label = "Regimen 3: minimal (TTP slope = 35%, relapse rate = 3%)",
+           start_row = 27,
+           end_row = 28) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 1.5%)",
+           start_row = 29,
+           end_row = 30) 
+```
+
+##### All Desirable Relapse Rates {.tabset .tabset-pills}
+
+###### Control Relapse Rate 3%
+
+```{r}
+# Situation 2, S(52) = .97 - ALL DESIRABLE
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk30_4mo-duration.RData"))
+s97.sit2.30 <- s97.situation2.results
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk40_4mo-duration.RData"))
+s97.sit2.40 <- s97.situation2.results
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk60_4mo-duration.RData"))
+s97.sit2.60 <- s97.situation2.results
+load(here("data","analyzed","2022-03-07_s97-situation2-results_nk80_4mo-duration.RData"))
+s97.sit2.80 <- s97.situation2.results
+
+# Situation 1
+df_30 <- full_join(simlevel_ttp30, 
+                   s97.sit2.30) %>% 
+  mutate(nk = 30)
+df_40 <- full_join(simlevel_ttp40, 
+                   s97.sit2.40) %>% 
+  mutate(nk = 40)
+df_60 <- full_join(simlevel_ttp60,
+                   s97.sit1.60) %>%
+  mutate(nk = 60)
+df_80 <- full_join(simlevel_ttp80,
+                   s97.sit1.80) %>%
+  mutate(nk = 80)
+
+bind_rows(df_30,
+          df_40,
+          df_60,
+          df_80) %>%
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(regimen == 1 ~ "ref",
+                                 (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ "10%",
+                                 ttp.condition == "even" & regimen == 3 ~ "20%",
+                                 ttp.condition == "even" & regimen == 4 ~ "30%",
+                                 (ttp.condition == "even" & regimen == 5) | 
+                                   (ttp.condition == "highlow" & regimen == 5) ~ "40%",
+                                 ttp.condition == "highlow" & regimen == 2 ~ "-10%",
+                                 (ttp.condition == "highlow" & regimen == 4) | 
+                                   (ttp.condition == "high" & regimen == 2) ~ "35%",
+                                 ttp.condition == "high" & regimen == 3 ~ "37%",
+                                 ttp.condition == "high" & regimen == 4 ~ "39%",
+                                 ttp.condition == "high" & regimen == 5 ~ "41%"),
+         .before = 1) %>%
+  mutate(Regimen = ifelse(regimen == 1, "Control", paste0("Regimen ", regimen)),
+         .before = 3) %>% 
+  ungroup() %>% 
+  arrange(ttp.condition, regimen, nk) %>% 
+  dplyr::select(-ttp.condition, -regimen, -`TTP Slope`, - Regimen) %>% 
+  kable(digits = 2,
+        caption = "Probability of stopping a regimen for futility based on the specified thresholds. Note, this assumes the regimens all have desirable relapse rates (specified in each row) and that the control regimen has a relapse rate of 3%. The goal is to stop suboptimal regimens frequently and minimal/desirable regimens infrequently.") %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:3) %>% 
+  group_rows(group_label = "Even (TTP). All desirable relapse rates.",
+             start_row = 1,
+             end_row = 20,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 3%)",
+           start_row = 1,
+           end_row = 4) %>% 
+  group_rows(group_label = "Regimen 1: (TTP slope = 10%, relapse rate = 1.5%)",
+           start_row = 5,
+           end_row = 8) %>% 
+  group_rows(group_label = "Regimen 2: (TTP slope = 20%, relapse rate = 1.5%)",
+           start_row = 9,
+           end_row = 12) %>%
+  group_rows(group_label = "Regimen 3: (TTP slope = 30%, relapse rate = 1.5%)",
+           start_row = 13,
+           end_row = 16) %>% 
+  group_rows(group_label = "Regimen 4: (TTP slope = 40%, relapse rate = 1.5%)",
+           start_row = 17,
+           end_row = 20) %>% 
+  group_rows(group_label = "High (TTP). All desirable relapse rates.",
+             start_row = 21,
+             end_row = 40,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 3%)",
+           start_row = 21,
+           end_row = 24) %>% 
+  group_rows(group_label = "Regimen 1: (TTP slope = 35%, relapse rate = 1.5%)",
+           start_row = 25,
+           end_row = 28) %>% 
+  group_rows(group_label = "Regimen 2: (TTP slope = 37%, relapse rate = 1.5%)",
+           start_row = 29,
+           end_row = 32) %>%
+  group_rows(group_label = "Regimen 3: (TTP slope = 39%, relapse rate = 1.5%)",
+           start_row = 33,
+           end_row = 36) %>% 
+  group_rows(group_label = "Regimen 4: (TTP slope = 41%, relapse rate = 1.5%)",
+           start_row = 37,
+           end_row = 40) %>% 
+  group_rows(group_label = "High-low (TTP). All desirable relapse rates.",
+             start_row = 41,
+             end_row = 60,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 3%)",
+           start_row = 41,
+           end_row = 44) %>% 
+  group_rows(group_label = "Regimen 1: (TTP slope = -10%, relapse rate = 1.5%)",
+           start_row = 45,
+           end_row = 48) %>% 
+  group_rows(group_label = "Regimen 2: (TTP slope = 10%, relapse rate = 1.5%)",
+           start_row = 49,
+           end_row = 52) %>%
+  group_rows(group_label = "Regimen 3: (TTP slope = 35%, relapse rate = 1.5%)",
+           start_row = 53,
+           end_row = 56) %>% 
+  group_rows(group_label = "Regimen 4: (TTP slope = 40%, relapse rate = 1.5%)",
+           start_row = 57,
+           end_row = 60) 
+```
+
+```{r}
+# Situation 2, S(52) = .95 - ALL DESIRABLE
+load(here("data","analyzed","2022-03-07_s95-situation2-results_nk30_4mo-duration.RData"))
+s95.sit2.30 <- s95.situation2.results
+
+# Situation 1
+df_30 <- full_join(simlevel_ttp30, 
+                   s95.sit2.30) %>% 
+  mutate(nk = 30)
+# df_60 <- full_join(simlevel_ttp60, 
+                   # s97.sit1.60) %>% 
+  # mutate(nk = 60)
+
+bind_rows(df_30) %>% #,
+          # df_40,
+          # df_60,
+          # df_80) %>% 
+  group_by(ttp.condition, regimen, nk) %>% 
+  summarise(`P(confidence < 0.8 OR >= 1 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 1, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 2 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 2, na.rm = TRUE),
+            `P(confidence < 0.8 OR >= 3 relapse)` = mean(continues.1criteria.80 == 0 | n_relapse_interim1 >= 3, na.rm = TRUE)) %>% 
+  mutate("TTP Slope" = case_when(regimen == 1 ~ "ref",
+                                 (ttp.condition == "even" & regimen == 2) | (ttp.condition == "highlow" & regimen == 3) ~ "10%",
+                                 ttp.condition == "even" & regimen == 3 ~ "20%",
+                                 ttp.condition == "even" & regimen == 4 ~ "30%",
+                                 (ttp.condition == "even" & regimen == 5) | 
+                                   (ttp.condition == "highlow" & regimen == 5) ~ "40%",
+                                 ttp.condition == "highlow" & regimen == 2 ~ "-10%",
+                                 (ttp.condition == "highlow" & regimen == 4) | 
+                                   (ttp.condition == "high" & regimen == 2) ~ "35%",
+                                 ttp.condition == "high" & regimen == 3 ~ "37%",
+                                 ttp.condition == "high" & regimen == 4 ~ "39%",
+                                 ttp.condition == "high" & regimen == 5 ~ "41%"),
+         .before = 1) %>%
+  mutate("Relapse rate" = case_when(regimen == 1 ~ "5%",
+                                    regimen == 2 ~ "10%",
+                                    regimen %in% c(3,4) ~ "5%",
+                                    regimen == 5 ~ "2.5%"),
+         .before = 2) %>% 
+  mutate(Regimen = ifelse(regimen == 1, "Control", paste0("Regimen ", regimen)),
+         .before = 3) %>% 
+  ungroup() %>% 
+  dplyr::select(-ttp.condition, -regimen, -`TTP Slope`, -`Relapse rate`, - Regimen) %>% 
+  filter(nk %in% c(30,60)) %>% 
+  kable(digits = 2) %>% 
+  kable_styling() %>% 
+  collapse_rows(columns = 1:3) %>% 
+  group_rows(group_label = "Even (TTP). Mixed relapse rates.",
+             start_row = 1,
+             end_row = 5,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 1,
+           end_row = 1) %>% 
+  group_rows(group_label = "Regimen 1: desirable (TTP slope = 10%, relapse rate = 2.5%)",
+           start_row = 2,
+           end_row = 2) %>% 
+  group_rows(group_label = "Regimen 2: desirable (TTP slope = 20%, relapse rate = 2.5%)",
+           start_row = 3,
+           end_row = 3) %>%
+  group_rows(group_label = "Regimen 3: desirable (TTP slope = 30%, relapse rate = 2.5%)",
+           start_row = 4,
+           end_row = 4) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 2.5%)",
+           start_row = 5,
+           end_row = 5) %>% 
+  group_rows(group_label = "High (TTP). Mixed relapse rates.",
+             start_row = 6,
+             end_row = 10,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 6,
+           end_row = 6) %>% 
+  group_rows(group_label = "Regimen 1: desirable (TTP slope = 35%, relapse rate = 2.5%)",
+           start_row = 7,
+           end_row = 7) %>% 
+  group_rows(group_label = "Regimen 2: desirable (TTP slope = 37%, relapse rate = 2.5%)",
+           start_row = 8,
+           end_row = 8) %>%
+  group_rows(group_label = "Regimen 3: desirable (TTP slope = 39%, relapse rate = 2.5%)",
+           start_row = 9,
+           end_row = 9) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 41%, relapse rate = 2.5%)",
+           start_row = 10,
+           end_row = 10) %>% 
+  group_rows(group_label = "High-low (TTP)",
+             start_row = 11,
+             end_row = 15,
+             label_row_css = "background-color: #066; color:#fff;") %>% 
+  group_rows(group_label = "Control (relapse rate = 5%)",
+           start_row = 11,
+           end_row = 11) %>% 
+  group_rows(group_label = "Regimen 1: desirable (TTP slope = -10%, relapse rate = 2.5%)",
+           start_row = 12,
+           end_row = 12) %>% 
+  group_rows(group_label = "Regimen 2: desirable (TTP slope = 10%, relapse rate = 2.5%)",
+           start_row = 13,
+           end_row = 13) %>%
+  group_rows(group_label = "Regimen 3: desirable (TTP slope = 35%, relapse rate = 2.5%)",
+           start_row = 14,
+           end_row = 14) %>% 
+  group_rows(group_label = "Regimen 4: desirable (TTP slope = 40%, relapse rate = 2.5%)",
+           start_row = 15,
+           end_row = 15) 
+```
+
+### Single Analysis {.tabset}
+
+#### Full data
+```{r}
+load(here("data","simulated-datasets","2022-03-06_full-data-nk60-survival-97.RData"))
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_best-in-topk-bayes-function.R")
+best_v_rest_function <- function(df, bestarm = NULL){
+  if(is.null(bestarm) == TRUE){
+    ests <- apply(df, 2, median) # trial-level best estimated arm
+    bestarm <- names(ests[which(ests == max(ests))])
+  }
+  otherarms <- setdiff(names(df), bestarm)
+  
+  best_v_rest <- mean(df[,bestarm] > df[,otherarms[1]] & 
+                        df[,bestarm] > df[,otherarms[2]] &
+                        df[,bestarm] > df[,otherarms[3]] &
+                        df[,bestarm] > df[,otherarms[4]])
+  data.frame(prop_best = best_v_rest,
+             bestarm = bestarm)
+}
+
+
+df_single <- nk_60_outcome_1$nk_60_even[[1]]$s95.situation1
+```
+
+```{r cache = TRUE, include = FALSE}
+############
+# Interim 1
+############
+# Pull out the first 30 patients enrolled per regimen to find the max enroll.day
+df_interim1 <- df_single %>% 
+  dplyr::select(patient.id, regimen, enroll.day) %>% 
+  distinct() %>% 
+  arrange(regimen, enroll.day) %>%  
+  group_by(regimen) %>% 
+  slice_head(n = 30)
+
+df_interim1 <- df_single %>% 
+  # Pull out all participants enrolled up to max enroll.day
+  filter(enroll.day <= max(df_interim1$enroll.day))
+
+interim1_date <- max(df_interim1$enroll.day)/7 + 8 + 5
+
+t1 <- df_interim1 %>% 
+  ungroup() %>% 
+  mutate(relapse_i1 = (eventtime + duration + enroll.day/7 <= interim1_date)*as.numeric(status == 1)) %>% 
+  group_by(regimen, relapse_i1) %>% 
+  summarise(n = n_distinct(patient.id)) %>% 
+  pivot_wider(names_from = relapse_i1,
+              values_from = n) %>% 
+  transmute(regimen, `No. patients` = `0` + `1`, `No. relapses` = `1`)
+
+t2 <- df_interim1 %>% 
+  group_by(patient.id) %>% 
+  mutate(fu = interim1_date - enroll.day/7) %>% 
+  dplyr::select(patient.id, regimen, fu) %>% 
+  distinct() %>% 
+  group_by(regimen) %>% 
+  summarise(median_fu = median(fu),
+            min_fu = min(fu),
+            max_fu = max(fu)) %>% 
+  rename(`Median FU (weeks)` = 2, `Min FU (weeks)` = 3, `Max FU (weeks)` = 4)
+
+## BRMS
+library(brms)
+m1_interim <- df_interim1 %>% 
+  mutate(regimen = as.factor(regimen)) %>% 
+  brm(yij_censored | cens(censored) ~ 1 + week + week:regimen + (1 | patient.id),
+      prior = set_prior("uniform(-1,1)", lb = -1, ub = 1, class = "b"),
+      data = .)
+
+s1 <- summary(m1_interim)
+
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_pairwise-comparisons-bayes-function.R")
+# estimate the MCMC slopes
+fit1 <- as_draws_df(m1_interim) %>% 
+  transmute(
+    regimen1 = `b_week`,
+    regimen2 = `b_week` + `b_week:regimen2`,
+    regimen3 = `b_week` + `b_week:regimen3`,
+    regimen4 = `b_week` + `b_week:regimen4`,
+    regimen5 = `b_week` + `b_week:regimen5`
+  )
+t3_pc_diff <- pairwise_function(fit1) %>% 
+  filter(vals == "relative slopes") %>% 
+  mutate(regimen = factor(2:5), .before = 1) %>% 
+  dplyr::select(regimen, `Median percent change in TTP slope` =median, 
+                `CI.l on percent change in TTP slope` = CI.l, 
+                `CI.u on percent change in TTP slope` = CI.u)
+
+# Confidence that each regimen is better than control
+t3_p_better <- fit1 %>% 
+  mutate(diff2 = as.numeric(regimen2 - regimen1 > 0),
+         diff3 = as.numeric(regimen3 - regimen1 > 0),
+         diff4 = as.numeric(regimen4 - regimen1 > 0),
+         diff5 = as.numeric(regimen5 - regimen1 > 0)) %>% 
+  summarise(p.better.2 = mean(diff2),
+            p.better.3 = mean(diff3),
+            p.better.4 = mean(diff4),
+            p.better.5 = mean(diff5)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "regimen",
+               values_to = "Confidence regimen has steeper slope than control") %>% 
+  mutate(regimen = factor(2:5))
+
+
+# Confidence each regimen is the best
+regimen_list <- as.list(paste0("regimen", 1:5))
+names <- paste0("regimen", 1:5)
+t3_p_best <- map_dfr(regimen_list, ~best_v_rest_function(fit1, bestarm = .x),
+    .id = "regimen") %>% 
+  mutate(regimen = factor(regimen)) %>% 
+  dplyr::select(regimen, `Confidence regimen is best` = prop_best)
+
+# Confidence regimen is one of top two
+t3_p_top2 <- map_dfr(regimen_list, ~p6_function(df = fit1,
+                                  subset.size = 2,
+                                  true.best = .x)) %>% 
+  mutate(regimen = factor(1:5), .before = 1) %>% 
+  dplyr::select(regimen, `Confidence regimen is one of top two best` = perc.confidence)
+```
+
+
+```{r full-table-interim1}
+full_join(t1, t2) %>% 
+  full_join(t3_pc_diff) %>% 
+  full_join(t3_p_better) %>% 
+  full_join(t3_p_best) %>% 
+  full_join(t3_p_top2) %>% 
+  kable(digits = 2,
+        caption = "interim 1") %>% 
+  kable_styling()
+```
+
+```{r cache = TRUE, include = FALSE}
+############
+# Interim 2
+############
+interim2_date <- max(df_single$enroll.day)/7 + 8 + 5
+
+t1 <- df_single %>% 
+  ungroup() %>% 
+  mutate(relapse_i1 = (eventtime + duration + enroll.day/7 <= interim2_date)*as.numeric(status == 1)) %>% 
+  group_by(regimen, relapse_i1) %>% 
+  summarise(n = n_distinct(patient.id)) %>% 
+  pivot_wider(names_from = relapse_i1,
+              values_from = n) %>% 
+  transmute(regimen, `No. patients` = `0` + `1`, `No. relapses` = `1`)
+
+t2 <- df_single %>% 
+  group_by(patient.id) %>% 
+  mutate(fu = interim2_date - enroll.day/7) %>% 
+  dplyr::select(patient.id, regimen, fu) %>% 
+  distinct() %>% 
+  group_by(regimen) %>% 
+  summarise(median_fu = median(fu),
+            min_fu = min(fu),
+            max_fu = max(fu)) %>% 
+  rename(`Median FU (weeks)` = 2, `Min FU (weeks)` = 3, `Max FU (weeks)` = 4)
+
+## BRMS
+library(brms)
+m2_interim <- df_single %>% 
+  mutate(regimen = as.factor(regimen)) %>% 
+  brm(yij_censored | cens(censored) ~ 1 + week + week:regimen + (1 | patient.id),
+      prior = set_prior("uniform(-1,1)", lb = -1, ub = 1, class = "b"),
+      data = .)
+
+s2 <- summary(m2_interim)
+
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_pairwise-comparisons-bayes-function.R")
+# estimate the MCMC slopes
+fit2 <- as_draws_df(m2_interim) %>% 
+  transmute(
+    regimen1 = `b_week`,
+    regimen2 = `b_week` + `b_week:regimen2`,
+    regimen3 = `b_week` + `b_week:regimen3`,
+    regimen4 = `b_week` + `b_week:regimen4`,
+    regimen5 = `b_week` + `b_week:regimen5`
+  )
+t3_pc_diff <- pairwise_function(fit2) %>% 
+  filter(vals == "relative slopes") %>% 
+  mutate(regimen = factor(2:5), .before = 1) %>% 
+  dplyr::select(regimen, `Median percent change in TTP slope` =median, 
+                `CI.l on percent change in TTP slope` = CI.l, 
+                `CI.u on percent change in TTP slope` = CI.u)
+
+# Confidence that each regimen is better than control
+t3_p_better <- fit2 %>% 
+  mutate(diff2 = as.numeric(regimen2 - regimen1 > 0),
+         diff3 = as.numeric(regimen3 - regimen1 > 0),
+         diff4 = as.numeric(regimen4 - regimen1 > 0),
+         diff5 = as.numeric(regimen5 - regimen1 > 0)) %>% 
+  summarise(p.better.2 = mean(diff2),
+            p.better.3 = mean(diff3),
+            p.better.4 = mean(diff4),
+            p.better.5 = mean(diff5)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "regimen",
+               values_to = "Confidence regimen has steeper slope than control") %>% 
+  mutate(regimen = factor(2:5))
+
+
+# Confidence each regimen is the best
+regimen_list <- as.list(paste0("regimen", 1:5))
+names <- paste0("regimen", 1:5)
+t3_p_best <- map_dfr(regimen_list, ~best_v_rest_function(fit2, bestarm = .x),
+    .id = "regimen") %>% 
+  mutate(regimen = factor(regimen)) %>% 
+  dplyr::select(regimen, `Confidence regimen is best` = prop_best)
+
+# Confidence regimen is one of top two
+t3_p_top2 <- map_dfr(regimen_list, ~p6_function(df = fit2,
+                                  subset.size = 2,
+                                  true.best = .x)) %>% 
+  mutate(regimen = factor(1:5), .before = 1) %>% 
+  dplyr::select(regimen, `Confidence regimen is one of top two best` = perc.confidence)
+```
+
+
+```{r full-table-interim2}
+full_join(t1, t2) %>% 
+  full_join(t3_pc_diff) %>% 
+  full_join(t3_p_better) %>% 
+  full_join(t3_p_best) %>% 
+  full_join(t3_p_top2) %>% 
+  kable(digits = 2,
+        caption = "interim 2") %>% 
+  kable_styling()
+```
+
+```{r}
+max(df_single$enroll.day)/7 + 52
+final <- df_single %>% 
+  group_by(regimen, status) %>% 
+  summarise(n = n_distinct(patient.id))
+```
+
+#### Interim 1
+
+```{r lineplot_enrolment-first-interim-60}
+df_single %>% 
+  mutate(relapse_observed_time = ifelse(status == 1 & eventtime + duration <= 52,
+                                        eventtime + duration + enroll.day/7,
+                                        NA)) %>% 
+  dplyr::select(patient.id, enroll.day, duration, regimen, eventtime, relapse_observed_time) %>% 
+  distinct() %>% 
+  ggplot(aes(x = enroll.day/7, y = reorder(patient.id, enroll.day))) +
+  geom_segment(aes(xend = enroll.day/7 + duration,
+                   yend = patient.id,
+                   col = regimen),
+               alpha = 0.7) +
+  geom_segment(aes(x = enroll.day/7 + duration,
+                   xend = enroll.day/7 + 52,
+                   yend = patient.id),
+               col = "darkgray",
+               alpha = 0.7) + 
+  geom_point(aes(x = relapse_observed_time),
+             col = "black",
+             pch = 4) +
+  geom_polygon(data = data.frame(x = c(0,0, 100, 100), y = c(150.5,305, 305, 150.5)), 
+               aes(x =x, y = y),
+               fill = "white",
+               alpha = 0.7) +
+  geom_polygon(data = data.frame(x = c(30.5,30.5, 100, 100), y = c(0,150.5, 150.5, 0)), 
+               aes(x =x, y = y),
+               fill = "white",
+               alpha = 0.7) +
+  ggpubr::theme_pubr() + 
+  coord_cartesian(xlim = c(0,80)) +
+  scale_x_continuous("Trial time", 
+                     breaks = c(0,26,52, 78),
+                     labels = c("Jan 2023", "Jun 2023", "Jan 2024", "Jun 2024")) + 
+  scale_y_discrete("Patient enrollment",
+                     breaks = arrange(distinct(dplyr::select(df_single, patient.id, enroll.day)), enroll.day)[seq(1,300,by = 10),1]) +
+  scale_color_manual(values = ucsf_col_pal[2:6]) + 
+  theme(axis.text.y = element_blank(),
+        legend.position = "none")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_enrolment-first-interim-60.jpg")),
+       device = "jpg",
+       height = 6,
+       width = 5,
+       units = "in")
+```
+
+```{r}
+df_single %>% 
+  mutate(relapse_time = ifelse(status == 1 & (eventtime + duration) <= 52, enroll.day/7 + eventtime + duration, NA)) %>% 
+  group_by(regimen) %>% 
+  filter(relapse_time <= interim1_date) %>% 
+  summarise(`No. relapses` = n_distinct(patient.id)) %>% 
+  kable(caption = "Number of relapses observed per regimen by the first interim analysis.") %>% 
+  kable_styling()
+```
+
+```{r brm-interim1-ex-model, cache = TRUE}
+# library(brms)
+# m1_interim <- df_single %>% 
+#   filter(enroll.day/7 <= 16) %>% 
+#   mutate(regimen = as.factor(regimen)) %>% 
+#   brm(yij_censored | cens(censored) ~ 1 + week + week:regimen + (1 | patient.id),
+#       prior = set_prior("uniform(-1,1)", lb = -1, ub = 1, class = "b"),
+#       data = .)
+```
+
+```{r}
+s1$fixed %>% 
+  kable(digits = 3) %>% 
+  kable_styling()
+
+s1$fixed %>% 
+  rownames_to_column(var = "coef") %>% 
+  ggplot(aes(y = coef)) + 
+  geom_vline(xintercept = 0,
+             lty = 2,
+             col = "darkgray") + 
+  geom_errorbarh(aes(xmin = `l-95% CI`, xmax = `u-95% CI`),
+                 height = 0.2,
+                 alpha = 0.6) + 
+  geom_text(aes(x = `u-95% CI` + 0.05,
+                label = paste0(format(round(Estimate, 3), nsmall = 3),
+                               " (", format(round(`l-95% CI`, 2), nsmall = 2), ", ", format(round(`u-95% CI`, 2),nsmall = 2), ")")),
+            hjust = 0,
+            size = 2) + 
+  geom_point(aes(Estimate),
+             size = 0.6) + 
+  ggpubr::theme_pubr() + 
+  ggtitle("Model Results", subtitle = "Bayesian linear mixed effects model") + 
+  xlab("Coefficient estimate") + 
+  coord_cartesian(xlim = c(0,1.15)) + 
+  scale_y_discrete(labels = c("Intercept", "Control", "Regimen 1", "Regimen 2", "Regimen 3", "Regimen 4")) + 
+  theme(axis.title.y = element_blank())
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_coef-estimates-example-60.jpg")),
+       device = "jpg",
+       width = 4,
+       height = 2.5,
+       units = "in")
+```
+
+
+How confident are we that regimen 4 is better than all other regimens? 
+
+```{r}
+# estimate the MCMC slopes
+regimen_list <- as.list(paste0("regimen", 1:5))
+names <- paste0("regimen", 1:5)
+map_dfr(regimen_list, ~best_v_rest_function(fit1, bestarm = .x),
+    .id = "regimen") %>% 
+  kable(digits = 4) %>% 
+  kable_styling()
+```
+
+How confident are we that our chosen subset contains the best regimen? 
+
+```{r}
+
+map_dfr(as.list(1:4), ~p6_function(df = fit2,
+                                  subset.size = .x,
+                                  true.best = "regimen5"))
+```
+
+How certain can we be that the rate of change in log10(TTP) for any regimen is different from the rate of change for the control?
+
+```{r}
+source("~/OneDrive - University of California, San Francisco/Research/phase2b-simstudy/lib/df_pairwise-comparisons-bayes-function.R")
+
+fit1 %>% 
+  mutate(diff2 = as.numeric(regimen2 - regimen1 > 0),
+         diff3 = as.numeric(regimen3 - regimen1 > 0),
+         diff4 = as.numeric(regimen4 - regimen1 > 0),
+         diff5 = as.numeric(regimen5 - regimen1 > 0)) %>% 
+  dplyr::select(diff2:diff5) %>% 
+  pivot_longer(names_to = "difference",
+               values_to = "prop",
+               cols = 1:4) %>% 
+  group_by(difference) %>% 
+  summarise(prop = mean(prop)) %>% 
+  ggplot(aes(x = difference, y = prop, fill = difference)) + 
+  geom_bar(stat = "identity",
+           width = 0.5) + 
+  geom_text(aes(y = prop + 0.05,
+                label = round(prop, 3))) + 
+  scale_fill_manual(values = ucsf_col_pal[2:5]) + 
+  ggpubr::theme_pubclean() + 
+  scale_x_discrete(labels = c("Regimen 1 v. Control",
+                              "Regimen 2 v. Control",
+                              "Regimen 3 v. Control",
+                              "Regimen 4 v. Control")) +
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = -30,
+                                   hjust = 0),
+        plot.margin = margin(6,41,6,6),
+        legend.position = "none") + 
+  ylab("P(regimen > control)")
+
+fit2 %>% 
+  pairwise_function() %>% 
+  filter(vals == "relative slopes") %>% 
+  ggplot(aes(x = contrast)) + 
+  geom_point(aes(y = median*100)) + 
+  geom_errorbar(aes(ymin = CI.l*100,
+                    ymax = CI.u*100),
+                width = 0.3) + 
+  coord_cartesian(ylim = c(-10,100)) +
+  geom_text(aes(y = median*100,
+                label = paste0(round(median*100,2), "%")),
+            hjust = -0.15,
+            size = 3) +
+  scale_x_discrete(labels = c("Regimen 1 v. Control",
+                              "Regimen 2 v. Control",
+                              "Regimen 3 v. Control",
+                              "Regimen 4 v. Control")) +
+  ylab("Credible estimate of\npairwise difference in slope (%)") + 
+  theme_bw() + 
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = -30,
+                                   hjust = 0),
+        plot.margin = margin(6,45,6,6),
+        legend.position = "none") 
+  
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_pointplot-credible-estimates-ex-60.jpg")),
+       device = "jpg",
+       width = 5,
+       height = 5,
+       units = "in")
+```
+
+#### Interim 2
+
+```{r lineplot_enrolment-second-interim-60}
+df_single %>% 
+  mutate(relapse_observed_time = ifelse(status == 1 & eventtime + duration <= 52,
+                                        eventtime + duration + enroll.day/7,
+                                        NA)) %>% 
+  ggplot(aes(x = enroll.day/7, y = reorder(patient.id, enroll.day))) +
+  geom_segment(aes(xend = enroll.day/7 + duration,
+                   yend = patient.id,
+                   col = regimen),
+               alpha = 0.1) +
+  geom_segment(aes(x = enroll.day/7 + duration,
+                   xend = enroll.day/7 + 52,
+                   yend = patient.id),
+               col = "darkgray",
+               alpha = 0.2) + 
+  # geom_vline(xintercept = 20,
+  #            lty = 2) + 
+  # geom_hline(yintercept = 150.5) +
+  geom_point(aes(x = relapse_observed_time),
+             col = "black",
+             pch = 4) +
+  # geom_polygon(data = data.frame(x = c(0,0, 100, 100), y = c(150.5,305, 305, 150.5)), 
+  #              aes(x =x, y = y),
+  #              fill = "white",
+  #              alpha = 0.7) +
+  geom_polygon(data = data.frame(x = c(43.5,43.5, 100, 100), y = c(0,305, 305, 0)), 
+               aes(x =x, y = y),
+               fill = "white",
+               alpha = 0.7) +
+  ggpubr::theme_pubr() + 
+  coord_cartesian(xlim = c(0,80)) +
+  scale_x_continuous("Trial time", 
+                     breaks = c(0,26,52, 78),
+                     labels = c("Jan 2023", "Jun 2023", "Jan 2024", "Jun 2024")) + 
+  ylab("Patient enrollment") + 
+  scale_color_manual(values = ucsf_col_pal[2:6]) + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_enrolment-second-interim-60.jpg")),
+       device = "jpg",
+       height = 6,
+       width = 5,
+       units = "in")
+```
+
+
+#### Final Analysis
+```{r lineplot_enrolment-final-analysis-60}
+df_single %>% 
+  mutate(relapse_observed_time = ifelse(status == 1 & eventtime + duration <= 52,
+                                        eventtime + duration + enroll.day/7,
+                                        NA)) %>% 
+  ggplot(aes(x = enroll.day/7, y = reorder(patient.id, enroll.day))) +
+  geom_segment(aes(xend = enroll.day/7 + duration,
+                   yend = patient.id,
+                   col = regimen),
+               alpha = 0.1) +
+  geom_segment(aes(x = enroll.day/7 + duration,
+                   xend = enroll.day/7 + 52,
+                   yend = patient.id),
+               col = "darkgray",
+               alpha = 0.2) + 
+  # geom_vline(xintercept = 20,
+  #            lty = 2) + 
+  # geom_hline(yintercept = 150.5) +
+  geom_point(aes(x = relapse_observed_time),
+             col = "black",
+             pch = 4) +
+  # geom_polygon(data = data.frame(x = c(0,0, 100, 100), y = c(150.5,305, 305, 150.5)), 
+  #              aes(x =x, y = y),
+  #              fill = "white",
+  #              alpha = 0.7) +
+  # geom_polygon(data = data.frame(x = c(35.5,35.5, 100, 100), y = c(0,305, 305, 0)), 
+  #              aes(x =x, y = y),
+  #              fill = "white",
+  #              alpha = 0.7) +
+  ggpubr::theme_pubr() + 
+  coord_cartesian(xlim = c(0,80)) +
+  scale_x_continuous("Trial time", 
+                     breaks = c(0,26,52, 78),
+                     labels = c("Jan 2023", "Jun 2023", "Jan 2024", "Jun 2024")) + 
+  ylab("Patient enrollment") + 
+  scale_color_manual(values = ucsf_col_pal[2:6]) + 
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none")
+```
+
+```{r eval = FALSE}
+ggsave(filename = here("graphs", "simulation-results",
+                       paste0(Sys.Date(), "_lineplot_enrolment-final-60.jpg")),
+       device = "jpg",
+       height = 6,
+       width = 5,
+       units = "in")
+```
+
+
+### Timelines
+
+```{r eval = FALSE}
+interim_time_fun <- function(nk, e.rate, ){
+  
+}
+df_timeline <- data.frame(nk = c(30,60),
+                          )
+```
+
+### R Version
+
+```{r echo = TRUE}
+R.version
+```
+
+
+<!-- ```{r sim-study-relapse-table, cache=TRUE} -->
+<!-- sit.names <- unique(df_relapses_even$setting) -->
+<!-- sit.names <- str_replace(str_replace(str_replace(sit.names, pattern = "situation1", " Mixed."), -->
+<!--                          "situation2", " All desirable."), -->
+<!--                          "situation3", " All minimal.") -->
+<!-- sit.names <- data.frame(setting = unique(df_relapses_even$setting), -->
+<!--                         Setting = str_replace(sit.names, "s9", "S1(26) = 0.9")) -->
+
+<!-- bind_rows(df_relapses$df_relapses_even, -->
+<!--           df_relapses$df_relapses_high, -->
+<!--           df_relapses$df_relapses_highlow) %>%  -->
+<!--   group_by(regimen, duration, setting) %>%  -->
+<!--   summarise(relapse.1 = 100*(sum(n_relapses == 1)/3000), -->
+<!--             relapse.2 = 100*(sum(n_relapses == 2)/3000), -->
+<!--             relapse.3.or.more = 100*(sum(n_relapses >= 3)/3000), -->
+<!--             nsims = 3000) %>%  -->
+<!--   left_join(sit.names) %>%  -->
+<!--   filter(Setting == "S1(26) = 0.97. Mixed." | is.na(setting)) %>%  -->
+<!--   rename(Regimen = regimen, -->
+<!--          Duration = duration, -->
+<!--          Characteristic = setting, -->
+<!--          `Perc. sims with 1 relapse` = relapse.1, -->
+<!--          `Perc. sims with 2 relapses` = relapse.2, -->
+<!--          `Perc. sims with 3+ relapses` = relapse.3.or.more, -->
+<!--          `No. sims` = nsims) %>%  -->
+<!--   dplyr::select(-Characteristic, -Setting) %>%  -->
+<!--   arrange(Regimen) %>%  -->
+<!--   kable(caption = "S(26) = 0.97 for HRZE. Mixed characteristics.", -->
+<!--         digits = 2) %>%  -->
+<!--   kable_styling() %>%  -->
+<!--   collapse_rows(columns = 1) -->
+
+<!-- bind_rows(df_relapses$df_relapses_even, -->
+<!--           df_relapses$df_relapses_high, -->
+<!--           df_relapses$df_relapses_highlow) %>%  -->
+<!--   group_by(setting) %>%  -->
+<!--   arrange(regimen, simulation) %>%  -->
+<!--   mutate(rown = row_number()) %>%  -->
+<!--   # Pulling only 1 entry from the control group -->
+<!--   filter((rown == 1 & regimen == 1) | regimen != 1) %>%  -->
+<!--   filter(simulation == 1) %>%  -->
+<!--   mutate(regimen = factor(regimen), -->
+<!--          duration = factor(duration)) %>%  -->
+<!--   group_by(regimen, duration, setting) %>%  -->
+<!--   summarise(relapse.1 = 100*(sum(n_relapses == 1)/3000), -->
+<!--             relapse.2 = 100*(sum(n_relapses == 2)/3000), -->
+<!--             relapse.3.or.more = 100*(sum(n_relapses >= 3)/3000)) %>%  -->
+<!--   left_join(sit.names) %>%  arrange(regimen) %>%   -->
+<!--   filter(Setting == "S1(26) = 0.97. All desirable." | is.na(setting)) %>%  -->
+<!--   rename(Regimen = regimen, -->
+<!--          Duration = duration, -->
+<!--          Characteristic = setting, -->
+<!--          `Perc. sims with 1 relapse` = relapse.1, -->
+<!--          `Perc. sims with 2 relapses` = relapse.2, -->
+<!--          `Perc. sims with 3+ relapses` = relapse.3.or.more) %>%  -->
+<!--   dplyr::select(-Characteristic, -Setting) %>%  -->
+<!--   arrange(Regimen) %>%  -->
+<!--   kable(caption = "S(26) = 0.97 for HRZE. All desirable.", -->
+<!--         digits = 2) %>%  -->
+<!--   kable_styling() -->
+
+<!-- bind_rows(df_relapses$df_relapses_even, -->
+<!--           df_relapses$df_relapses_high, -->
+<!--           df_relapses$df_relapses_highlow) %>%  -->
+<!--   mutate(rown = row_number()) %>%  -->
+<!--   filter((rown == 1 & regimen == 1) | regimen != 1) %>%  -->
+<!--   group_by(regimen, duration, setting) %>%  -->
+<!--   summarise(relapse.1 = 100*(sum(n_relapses == 1)/3000), -->
+<!--             relapse.2 = 100*(sum(n_relapses == 2)/3000), -->
+<!--             relapse.3.or.more = 100*(sum(n_relapses >= 3)/3000)) %>%  -->
+<!--   left_join(sit.names) %>%  -->
+<!--   filter(Setting == "S1(26) = 0.97. All minimal." | is.na(setting)) %>%  -->
+<!--   rename(Regimen = regimen, -->
+<!--          Duration = duration, -->
+<!--          Characteristic = setting, -->
+<!--          `Perc. sims with 1 relapse` = relapse.1, -->
+<!--          `Perc. sims with 2 relapses` = relapse.2, -->
+<!--          `Perc. sims with 3+ relapses` = relapse.3.or.more) %>%  -->
+<!--   dplyr::select(-Characteristic, -Setting) %>%  -->
+<!--   arrange(Regimen) %>%  -->
+<!--   kable(caption = "S(26) = 0.97 for HRZE. All minimal", -->
+<!--         digits = 2) %>%  -->
+<!--   kable_styling() -->
+<!-- ``` -->
+
+<!-- 1. Drop any regimen with less than 80% confidence that it has a larger effect size on log10(TTP) slope than the control regimen.  -->
+
+<!-- 2. Drop any regimen with less than 80% confidence that it is in the top 2 best regimens. -->
+
+
+<!-- ```{r} -->
+<!-- ``` -->
+
+<!-- ### Analysis of a single single simulated dataset {.tabset .tabset-pills} -->
+
+<!-- ```{r single-dataset, cache = TRUE} -->
+<!-- load(here("data","simulated-datasets","2022-02-24_full-data-nk30-survival-97.RData")) -->
+<!-- df_single <- nk_30_outcome_1$nk_30_even[[1]]$s97.situation1 -->
+<!-- rm(nk_30_outcome_1) -->
+<!-- ``` -->
+
+<!-- **Conclusion.** (Note: these are not full results as duration was not properly randomized) -->
+
+<!-- Based on the log10(TTP) results, we can say with 87.6% confidence that regimen 5 is the best. Our most credible estimate of its corresponding improvement in slope relative to HRZE is 34% (95% CI: 15.2%, 54.4%). -->
+
+<!-- With respect to the relapse data, we would drop regimens 2 and 4. -->
+
+<!-- Rule:  -->
+<!-- > Relapses – stop any 2m arms with > 3 / 10 relapses; stop any 3m arms with > 2 relapses if the 2m arm has stopped, stop whole regimen if have stopped 2m, 3m arms and have > 2 relapses in the 4m arm; or if have > 4 relapses in the 4m arm alone. -->
+
+
+<!-- #### Visualization  -->
+
+<!-- ```{r interim-visualization, fig.width = 10, fig.height = 8, fig.cap= "This (or similar) visualization could be generated at the interim point to be able to examine the data for obvious patterns."} -->
+<!-- # date of interim analysis -->
+<!-- interim_date <- df_single %>%  -->
+<!--   filter((week + enroll.day/7) == max(week + enroll.day/7)) %>%  -->
+<!--   mutate(interim.week = (week + # date of last visit -->
+<!--                          enroll.day/7 + #date of enrollment -->
+<!--                          4)) # 25 days for culture conversion -->
+
+<!-- df_single <- df_single %>%  -->
+<!--   mutate(observed.relapse = ifelse(status == 1 & eventtime <= 52 - duration, 1, 0), -->
+<!--               observed.relapse.date.trial = ifelse(observed.relapse == 1, eventtime + duration + enroll.day/7, NA)) %>%  -->
+<!--   mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim_date$interim.week, 1,  -->
+<!--                                                           ifelse(observed.relapse == 0, 0, 0))) %>%  -->
+<!--   mutate(Regimen = paste0("Regimen ", regimen), -->
+<!--          Duration = factor(duration, levels = c(8,10,12,14,16,26)))  -->
+
+<!-- df_single %>% -->
+<!--   ggplot(aes(x = enroll.day/7 + patient.visit.week, y = reorder(patient.id, enroll.day), col = Regimen)) +  -->
+<!--   facet_wrap(~Regimen, scales = "free") + -->
+<!--   geom_segment(aes(yend = patient.id, x = enroll.day/7 + duration, -->
+<!--                    xend = 52 + enroll.day/7), -->
+<!--                col = "darkgray", alpha = 0.4, -->
+<!--                lty = 1) + -->
+<!--   geom_segment(aes(yend = patient.id, x = enroll.day/7, -->
+<!--                    xend = enroll.day/7 + duration, -->
+<!--                    lty = Duration)) + -->
+<!--   geom_vline(xintercept = interim_date$interim.week, -->
+<!--              lty = 2, -->
+<!--              col = "black") + -->
+<!--   annotate("text", x = interim_date$interim.week + 6, y = 1.5, label = "Interim 1", col = "black", -->
+<!--            hjust = 0) + -->
+<!--   coord_cartesian(xlim = c(0,100)) + -->
+<!--   scale_y_discrete("Patient enrolment") + -->
+<!--   scale_x_continuous("Trial time (weeks)") + -->
+<!--   geom_point(aes(x = observed.relapse.date.trial), -->
+<!--              pch = 4, -->
+<!--              col = "black") + -->
+<!--   ggpubr::theme_pubr() + -->
+<!--   theme(axis.ticks.y = element_blank(), -->
+<!--         axis.text.y = element_blank(), -->
+<!--         legend.position = "right", -->
+<!--         legend.direction = "vertical") -->
+<!-- ``` -->
+
+<!-- #### Tables  -->
+
+<!-- ```{r relapse-count} -->
+<!-- relapses <- df_single %>%  -->
+<!--   group_by(regimen, duration, relapses_observed = (!is.na(observed.relapse.date.trial) & observed.relapse.date.trial <= interim_date$interim.week)) %>%  -->
+<!--   summarise(n_relapses = n_distinct(patient.id)) %>% # for now - participants are generating more than 1 relapse. MUST FIX -->
+<!--   filter(relapses_observed == TRUE) %>%  -->
+<!--   dplyr::select(-relapses_observed) -->
+<!-- ``` -->
+
+<!-- ```{r log10ttp-data-eval} -->
+
+<!-- mcmc_output <- mcmc_m1 -->
+
+<!-- true.change.slope <- data.frame(regimen = factor(1:5), true.change = c("ref", 0.1, 0.2, 0.3, 0.4)) -->
+<!-- pairwise_comparisons_ref <- pairwise_function(mcmc_output) %>%  -->
+<!--   mutate(regimen = rep(factor(2:5), 2)) -->
+
+<!-- # pairwise_confidence_ref <-  -->
+
+<!-- confidence_best <- map_dfr(as.list(paste0("arm", 1:5)), -->
+<!--                        ~best_v_rest_function(mcmc_output, bestarm = .x), -->
+<!--                        .id = "regimen") -->
+
+<!-- best_in_subset_2 <- map_dfr(as.list(paste0("arm", 1:5)), ~best_in_subset_function(mcmc_output, -->
+<!--                                                         subset.size = 2, -->
+<!--                                                         true.best = .x), -->
+<!--                             .id = "regimen") %>%  -->
+<!--   mutate(regimen = factor(1:5))  %>%  -->
+<!--   rename(perc.confidence.2 = perc.confidence) %>%  -->
+<!--   dplyr::select(-subset.size) -->
+
+<!-- best_in_subset_3 <- map_dfr(as.list(paste0("arm", 1:5)), ~best_in_subset_function(mcmc_output, -->
+<!--                                                         subset.size = 3, -->
+<!--                                                         true.best = .x), -->
+<!--                             .id = "regimen") %>%  -->
+<!--   mutate(regimen = factor(1:5)) %>%  -->
+<!--   rename(perc.confidence.3 = perc.confidence) %>%  -->
+<!--   dplyr::select(-subset.size) -->
+
+<!-- ``` -->
+
+<!-- ```{r single-data-table} -->
+<!-- full_table <- full_join( -->
+<!--   full_join( -->
+<!--     full_join( -->
+<!--       full_join( -->
+<!--         full_join(relapses,  -->
+<!--                   true.change.slope), -->
+<!--         pairwise_comparisons_ref), -->
+<!--       confidence_best), -->
+<!--     best_in_subset_2), -->
+<!--   best_in_subset_3) -->
+
+
+<!-- full_table %>%  -->
+<!--   filter(vals == "relative slopes" | regimen == 1) %>%  -->
+<!--   rename(Regimen = regimen, -->
+<!--          Duration = duration,  -->
+<!--          `No. relapses` = n_relapses, -->
+<!--          `True percent change in slope` = true.change, -->
+<!--          `Est. percent change in slope` = median, -->
+<!--          CI.l = CI.l, -->
+<!--          CI.u = CI.u, -->
+<!--          `P(regimen is best)` = prop_best, -->
+<!--          `P(regimen is one of top 2 best)` = perc.confidence.2, -->
+<!--          `P(regimen is one of top 3 best)` = perc.confidence.3) %>%  -->
+<!--   dplyr::select(-contrast, -vals) %>%  -->
+<!--   kable(digits = 3, -->
+<!--         caption = "This (or similar) table could provide a dashboard of useful information for decision-making.") %>%  -->
+<!--   kable_styling() -->
+<!-- ``` -->
+
+

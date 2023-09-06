@@ -2,11 +2,15 @@
 # Even
 ######################
 
-relapse_count_function <- function(simdf){
-  # date of interim analysis
+relapse_count_function <- function(simdf, buffer.weeks = 0){
+  # "buffer.weeks" added to account for difference durations of TTP follow-up when assessing how many unfavorable outcomes are 
+  # expected by the time of the first interim analysis
+  
+  # set the date date of interim analysis
   interim_date <- simdf %>% 
-    filter((week + enroll.day/7) == max(week + enroll.day/7)) %>% 
+    filter((week + buffer.weeks + enroll.day/7) == max(week + buffer.weeks + enroll.day/7)) %>% 
     mutate(interim.week = (week + # date of last visit
+                             buffer.weeks + # buffer to account for different lengths of TTP follow up
                              enroll.day/7 + #date of enrollment
                              4 + 1)) # 25 days for culture conversion and one week for analysis
   
@@ -16,10 +20,11 @@ relapse_count_function <- function(simdf){
     mutate(relapse.interim1 = ifelse(observed.relapse == 1 & observed.relapse.date.trial <= interim_date$interim.week, 1, 
                                      ifelse(observed.relapse == 0, 0, 0))) %>% 
     mutate(Regimen = paste0("Regimen ", regimen),
-           Duration = factor(duration, levels = c(8,10,12,14,16,26))) 
+           Duration = factor(duration, levels = c(8,10,12,14,16,26)), 
+           `TTP Followup` = max(week) + buffer.weeks) 
   
   counts <- temp %>% 
-    group_by(regimen, duration, 
+    group_by(regimen, `TTP Followup`, 
              relapses_observed = (!is.na(observed.relapse.date.trial) & 
                                     observed.relapse.date.trial <= interim_date$interim.week)) %>% 
     summarise(n_relapses = n_distinct(patient.id)) %>%

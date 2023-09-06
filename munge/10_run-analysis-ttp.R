@@ -1,6 +1,6 @@
 ###################
 # Job for cluster
-# Bayes model breaks cluster after more than 100 runs, so separate scripts per hundred runs
+# Bayes model breaks cluster after more than a couple 100 runs, so separate scripts per ~hundred runs
 # 2023-06-28
 ###################
 
