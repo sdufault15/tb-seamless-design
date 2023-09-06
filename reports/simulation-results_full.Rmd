@@ -187,11 +187,11 @@ s95.sit1.80 <- s95.situation1.results; rm(s95.situation1.results)
 ```
 
 ```{r fig-relapse-data, fig.width = 7, fig.height = 9}
-bind_rows(mutate(s95.sit1.20, nk = 20),
-          mutate(s95.sit1.30, nk = 30),
-          mutate(s95.sit1.40, nk = 40),
-          mutate(s95.sit1.60, nk = 60),
-          mutate(s95.sit1.80, nk = 80)) %>% 
+p_outcomes <- bind_rows(mutate(s95.sit1.20, nk = 20),
+                        mutate(s95.sit1.30, nk = 30),
+                        mutate(s95.sit1.40, nk = 40),
+                        mutate(s95.sit1.60, nk = 60),
+                        mutate(s95.sit1.80, nk = 80)) %>% 
   group_by(nk, regimen) %>% 
   summarise(prop_stopped_1 = mean(n_relapse_interim1 >= 1),
             prop_stopped_2 = mean(n_relapse_interim1 >= 2),
@@ -221,18 +221,20 @@ bind_rows(mutate(s95.sit1.20, nk = 20),
   scale_x_discrete(TeX("$n_k$"), breaks = c(20,30,40,60,80), labels = c(20,30,40,60,80)) + 
   scale_fill_viridis_c(TeX("Pr(No. observed unfavorable outcomes $\\geq$ threshold)")) + 
   theme(legend.position = "bottom")
+
+p_outcomes
 ```
 
 ```{r eval= FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope",
-                       paste0(Sys.Date(), "_relapse-thresholds.jpg")),
-       device = "jpg",
+ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds.tiff"),
+       device = "tiff",
        height = 6,
-       width = 5.5,
+       width = 6,
        units = "in")
 
-ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds.eps"),
-       device = "eps",
+p_outcomes + ggtitle("Dufault Fig. 3 (Top)")
+ggsave(filename = here("graphs", "submission", "fig-03_relapse-thresholds_annotated.tiff"),
+       device = "tiff",
        height = 6,
        width = 6,
        units = "in")
@@ -326,7 +328,7 @@ d_full %>%
 ```
 
 ```{r barplot-tpp-decisions, fig.width = 10, fig.height = 6, fig.cap = "When theta_mav = 0, theta_TV = 20, tau_mav = tau_TV = 0.025."}
-d_full %>% 
+p_tpp <- d_full %>% 
   ggplot(aes(x = nk, y = Probability, fill = Decision)) + 
   geom_bar(stat = "identity") + 
   facet_wrap(~Regimen, nrow = 1) +
@@ -340,36 +342,24 @@ d_full %>%
   # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
   ggpubr::theme_pubr() + 
   theme(legend.position = "bottom")
+
+p_tpp
 ```
 
 ```{r eval=FALSE}
-ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions.eps"),
-       device = "eps",
+ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions.tiff"),
+       device = "tiff",
        height = 6,
        width = 9,
        units = "in")
 ```
 
 ```{r eval = FALSE}
-d_full %>% 
-  ggplot(aes(x = nk, y = Probability, fill = Decision)) + 
-  geom_bar(stat = "identity") + 
-  facet_wrap(~Regimen, nrow = 1) +
-  scale_y_continuous("Decision Probability",
-                     breaks = seq(0,1,by = 0.1),
-                     labels = seq(0,1,by = 0.1)) +
-  scale_fill_manual(values = c("red", ucsf_col_pal[8], ucsf_col_pal[4]),
-                    breaks = c("NO-GO", "Continue", "GO"),
-                    labels = c("NO-GO", "Continue", "GO")) +
-  xlab(TeX("$n_k$")) + 
-  ggtitle("Dufault Fig. 4 (Top)") +
-  # ggtitle("", subtitle = TeX("$\\theta_{MAV} = 0%, \\theta_{TV} = 20%, \\tau_{MAV} = \\tau_{TV} = 0.025$")) +
-  ggpubr::theme_pubr() + 
-  theme(legend.position = "bottom")
+p_tpp +
+  ggtitle("Dufault Fig. 4 (Top)") 
 
-ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_annotated.eps"),
-       device = "eps",
-       dpi = 600,
+ggsave(filename = here("graphs", "submission", "fig-04_barplot-tpp-decisions_annotated.tiff"),
+       device = "tiff",
        height = 6,
        width = 9,
        units = "in")
@@ -786,13 +776,6 @@ p1 + p2 + p3 +
 ```
 
 ```{r eval = FALSE}
-ggsave(filename = here("graphs", "simulation-results", "random-intercept-random-slope", 
-                       paste0(Sys.Date(), "_density-plot_prob-steepest_top-2.png")),
-       device = "png",
-       width = 10,
-       height = 5,
-       units = "in")
-
 ggsave(filename = here("graphs", "submission", "fig-05_density-plot_prob-steepest_top-2.tiff"),
        device = "tiff",
        width = 10,
@@ -2440,8 +2423,20 @@ p_suboptimal / p_minimal / p_desirable +
 
 ```{r}
 #| eval: false
-ggsave(filename = here("graphs", "submission", "fig-02_panel-oc-full-framework.png"),
-       device = "png",
+ggsave(filename = here("graphs", "submission", "fig-02_panel-oc-full-framework.tiff"),
+       device = "tiff",
+       height = 8,
+       width = 8,
+       units = "in")
+
+p_suboptimal / p_minimal / p_desirable + 
+  plot_layout(guides = "collect") + 
+  plot_annotation(tag_levels = "A",
+                  title = "Dufault Fig. 2 (Top)") &
+  theme(legend.position = "bottom")
+
+ggsave(filename = here("graphs", "submission", "fig-02_panel-oc-full-framework_annotated.tiff"),
+       device = "tiff",
        height = 8,
        width = 8,
        units = "in")
