@@ -20,3 +20,4 @@ names(nk) <- nk
 source(here("analysis", "03_tpp-decisions.R"))
 source(here("analysis", "04_ranking-probabilities.R"))
 source(here("analysis", "05_compare-v-control.R")) # depends on previous script
+source(here("analysis", "06_relapse-counts.R"))
