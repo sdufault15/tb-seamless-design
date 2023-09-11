@@ -90,7 +90,8 @@ decisions_high <- future_map2_dfr(mcmc_high, nk, ~decision_function(.x,
                                                                     tau_lrv = tau_lrv, 
                                                                     tau_tv = tau_tv))
 
-decisions <- list(decisions_even = decisions_even,
+decisions <- list(decisions_null = decisions_null,
+                  decisions_even = decisions_even,
                   decisions_highlow = decisions_highlow,
                   decisions_high = decisions_high)
 save(decisions, file = here("data", "analyzed", "target-product-profile", 
