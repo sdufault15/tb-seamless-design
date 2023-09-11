@@ -6,6 +6,13 @@
 
 source(here("lib", "mcmc-compare-v-control.R"))
 
+compare_null <- future_map(mcmc_null,
+                           ~map_dfr(.x, 
+                                    ~mcmc_v_control_function(.x),
+                                    .id = "sim")) %>% 
+  map_dfr(~.x, .id = "nk") %>% 
+  mutate(condition = "Null")
+
 compare_even <- future_map(mcmc_even,
                            ~map_dfr(.x, 
                                     ~mcmc_v_control_function(.x),
