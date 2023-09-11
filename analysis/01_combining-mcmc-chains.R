@@ -7,41 +7,45 @@ library(tidyverse)
 library(assertthat) # for defensive programming
 
 ############  NULL ############################################################
-# CURRENT SUMMARY OBJECTS CANNOT BE USED TO EXTRACT MCMC SLOPES... NEED TO GET THE MODEL OBJECT DIRECTLY
-# load(here("data", "bayes-generated", "2023-08-01_bayes-full-model-results_no-winners_100.RData"))
-# summary_mods_no_winners_100 <- summary_mods_no_winners; rm(summary_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-08-03_bayes-full-model-results_no-winners_200.RData"))
-# summary_mods_no_winners_200 <- summary_mods_no_winners; rm(summary_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-08-01_bayes-full-model-results_no-winners_300.RData"))
-# summary_mods_no_winners_300 <- summary_mods_no_winners; rm(summary_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-08-01_bayes-full-model-results_no-winners_400.RData"))
-# summary_mods_no_winners_400 <- summary_mods_no_winners; rm(summary_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-08-03_bayes-full-model-results_no-winners_500.RData"))
-# summary_mods_no_winners_500 <- summary_mods_no_winners; rm(summary_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-08-03_bayes-full-model-results_no-winners_600.RData"))
-# summary_mods_no_winners_600 <- summary_mods_no_winners; rm(summary_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-08-03_bayes-full-model-results_no-winners_700.RData"))
-# summary_mods_no_winners_700 <- summary_mods_no_winners; rm(summary_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_100.RData"))
+mcmc_mods_no_winners_100 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_200.RData"))
+mcmc_mods_no_winners_200 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_300.RData"))
+mcmc_mods_no_winners_300 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_400.RData"))
+mcmc_mods_no_winners_400 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_500.RData"))
+mcmc_mods_no_winners_500 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_600.RData"))
+mcmc_mods_no_winners_600 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_700.RData"))
+mcmc_mods_no_winners_700 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+# load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_800.RData"))
+mcmc_mods_no_winners_800 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+# load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_900.RData"))
+mcmc_mods_no_winners_900 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+# load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_1000.RData"))
+mcmc_mods_no_winners_1000 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
+
+# Objects of [N simulations] X [5 sample sizes] X [4000 x 5 arms posterior estimates]
+
+mcmc_mods_no_winners <- c(mcmc_mods_no_winners_100,
+                          mcmc_mods_no_winners_200,
+                          mcmc_mods_no_winners_300,
+                          mcmc_mods_no_winners_400,
+                          mcmc_mods_no_winners_500,
+                          mcmc_mods_no_winners_600,
+                          mcmc_mods_no_winners_700#,
+                          # mcmc_mods_no_winners_800,
+                          # mcmc_mods_no_winners_900,
+                          # mcmc_mods_no_winners_1000
+                          )
 # 
-# source(here("lib", "df_extract-mcmc-slopes-function.R"))
+# assert_that(length(mcmc_mods_no_winners) == 1000)
 # 
-# mcmc_mods_no_winners <- c(summary_mods_no_winners_100, 
-#                           summary_mods_no_winners_200, 
-#                           summary_mods_no_winners_300,
-#                           summary_mods_no_winners_400,
-#                           summary_mods_no_winners_500, 
-#                           summary_mods_no_winners_600,
-#                           summary_mods_no_winners_700,
-#                           # summary_mods_no_winners_800,
-#                           # summary_mods_no_winners_900,
-#                           # summary_mods_no_winners_1000
-#                           ) %>% 
-#   map(~.x %>% map(~mcmc_estimates_function(.x)))
-# 
-# assert_that(length(mcmc_mods_even_20) == 1000)
-# 
-# save(mcmc_mods_null,
-#      file = here("data", "cleaned", paste0(Sys.Date(), "_mcmc_random-intercept-random-slope_nk-null.RData")))
+save(mcmc_mods_no_winners,
+     file = here("data", "cleaned", paste0(Sys.Date(), "_mcmc_random-intercept-random-slope_nk-no-winners.RData")))
 
 
 
