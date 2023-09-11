@@ -4,14 +4,12 @@
 # Aug 21, 2023
 ##################################
 
+source(here("lib", "target-product-profile-function.R"))
+
 # Data
 
 # # Null - NOT READY - Needs to be reworked
-# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
-# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_even.RData"))
-# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-40_even.RData"))
-# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-60_even.RData"))
-# load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_even.RData"))
+load(here("data","cleaned","2023-09-11_mcmc_random-intercept-random-slope_nk-no-winners.RData"))
 
 # Even
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
@@ -37,6 +35,11 @@ load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_
 ########################
 # Wrangling
 ########################
+mcmc_null <- list(nk20 = map(mcmc_mods_no_winners, ~.x[[1]]),
+                  nk30 = map(mcmc_mods_no_winners, ~.x[[2]]),
+                  nk40 = map(mcmc_mods_no_winners, ~.x[[3]]),
+                  nk60 = map(mcmc_mods_no_winners, ~.x[[4]]),
+                  nk80 = map(mcmc_mods_no_winners, ~.x[[5]]))
 
 mcmc_even <- list(nk20 = mcmc_mods_even_20,
                   nk30 = mcmc_mods_even_30,
@@ -60,6 +63,12 @@ mcmc_highlow <- list(nk20 = mcmc_mods_highlow_20,
 # Run decisions
 ########################
 plan(multisession)
+decisions_null <- future_map2_dfr(mcmc_null, nk, ~decision_function(.x,
+                                                                    nk = .y,
+                                                                    theta_lrv = theta_lrv, # in %
+                                                                    theta_tv = theta_tv, # in % 
+                                                                    tau_lrv = tau_lrv, 
+                                                                    tau_tv = tau_tv))
 decisions_even <- future_map2_dfr(mcmc_even, nk, ~decision_function(.x,
                                                                     nk = .y,
                                                                     theta_lrv = theta_lrv, # in %
