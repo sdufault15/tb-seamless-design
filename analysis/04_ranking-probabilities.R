@@ -6,6 +6,9 @@
 source(here("lib","mcmc-rank-function.R"))
 # Data
 
+# Null
+load(here("data","cleaned","2023-09-11_mcmc_random-intercept-random-slope_nk-no-winners.RData"))
+
 # Even
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_even.RData"))
@@ -26,6 +29,12 @@ load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-30_
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-40_highlow.RData"))
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-60_highlow.RData"))
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-80_highlow.RData"))
+
+mcmc_null <- list(nk20 = map(mcmc_mods_no_winners, ~.x[[1]]),
+                  nk30 = map(mcmc_mods_no_winners, ~.x[[2]]),
+                  nk40 = map(mcmc_mods_no_winners, ~.x[[3]]),
+                  nk60 = map(mcmc_mods_no_winners, ~.x[[4]]),
+                  nk80 = map(mcmc_mods_no_winners, ~.x[[5]]))
 
 mcmc_even <- list(nk20 = mcmc_mods_even_20,
                   nk30 = mcmc_mods_even_30,
@@ -52,6 +61,11 @@ rm(list = ls(pattern = "mcmc_mods_"))
 
 library(furrr)
 plan(multisession)
+ranking_output_null <- future_map(mcmc_null, # mcmc_even has 5 slots (one per sample size)
+                                  ~map(.x, # within each sample size, there are 1,000 simulated mcmc chains 
+                                       ~mcmc_rank_function(.x)),
+                                  .id = "nk")
+
 ranking_output_even <- future_map(mcmc_even, # mcmc_even has 5 slots (one per sample size)
                                   ~map(.x, # within each sample size, there are 1,000 simulated mcmc chains 
                                        ~mcmc_rank_function(.x)),
@@ -71,6 +85,19 @@ beepr::beep()
 ####################
 # Combine results
 ####################
+null_full <- bind_rows(
+  mutate(map_dfr(ranking_output_null$nk20,
+                 ~.x,
+                 .id = "sim"), nk = 20),
+  mutate(map_dfr(ranking_output_null$nk30,
+                 ~.x,.id = "sim"), nk = 30), 
+  mutate(map_dfr(ranking_output_null$nk40,
+                 ~.x,.id = "sim"), nk = 40),
+  mutate(map_dfr(ranking_output_null$nk60,
+                 ~.x,.id = "sim"), nk = 60),
+  mutate(map_dfr(ranking_output_null$nk80,
+                 ~.x,.id = "sim"), nk = 80)) 
+
 even_full <- bind_rows(
   mutate(map_dfr(ranking_output_even$nk20,
                  ~.x,
@@ -110,7 +137,8 @@ highlow_full <- bind_rows(
   mutate(map_dfr(ranking_output_highlow$nk80,
                  ~.x,.id = "sim"), nk = 80)) 
 
-ranking_probabilities <- list(even_probabilities = even_full,
+ranking_probabilities <- list(null_probabilities = null_full,
+                              even_probabilities = even_full,
                               highlow_probabilities = highlow_full,
                               high_probabilities = high_full)
 save(ranking_probabilities, file = here("data", "analyzed", "ranking", 
