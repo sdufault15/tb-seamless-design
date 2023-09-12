@@ -296,7 +296,7 @@ df_sims_no_winners_fe_surv <- df_sims_no_winners_fe %>%
                               loghaz = log_haz_1,
                               maxt = maxt),
              .options = furrr_options(seed = TRUE))
-save(df_sims_no_winners_fe,
+save(df_sims_no_winners_fe_surv,
      file = here("data",
                  paste0("simulated-datasets/", Sys.Date(), "_simulated-df_no-winners-ttp-fe-survival.RData")))
 
@@ -306,7 +306,7 @@ df_sims_one_winner_fe_surv <- df_sims_one_winner_fe %>%
                               loghaz = log_haz_1,
                               maxt = maxt),
              .options = furrr_options(seed = TRUE))
-save(df_sims_one_winner_fe,
+save(df_sims_one_winner_fe_surv,
      file = here("data",
                  paste0("simulated-datasets/", Sys.Date(), "_simulated-df_one-winner-ttp-fe-survival.RData")))
 
@@ -316,7 +316,7 @@ df_sims_two_winners_fe_surv <- df_sims_two_winners_fe %>%
                               loghaz = log_haz_1,
                               maxt = maxt),
              .options = furrr_options(seed = TRUE))
-save(df_sims_two_winners_fe,
+save(df_sims_two_winners_fe_surv,
      file = here("data",
                  paste0("simulated-datasets/", Sys.Date(), "_simulated-df_two-winners-ttp-fe-survival.RData")))
 
@@ -326,7 +326,7 @@ df_sims_four_winners_fe_surv <- df_sims_four_winners_fe %>%
                               loghaz = log_haz_1,
                               maxt = maxt),
              .options = furrr_options(seed = TRUE))
-save(df_sims_four_winners_fe,
+save(df_sims_four_winners_fe_surv,
      file = here("data",
                  paste0("simulated-datasets/", Sys.Date(), "_simulated-df_four-winners-ttp-fe-survival.RData")))
 
