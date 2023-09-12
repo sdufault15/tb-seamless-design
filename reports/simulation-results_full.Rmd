@@ -173,8 +173,10 @@ p3 <- data.frame(Control = betas[1] + betas[2]*0:8,
   ggtitle("4 Winners condition", subtitle = c("35%, 37%, 39%, 41%")) + 
   theme_bw()
 
-p0 / ( (p00+p1)/(p2 + p3)) +
+ttp_fig <- p0 / ( (p00+p1)/(p2 + p3)) +
   plot_layout(guides="collect")
+
+ttp_fig
 ```
 
 ```{r}
@@ -714,6 +716,40 @@ bind_rows(null_stat,
 ```
 
 ```{r}
+p0 <- mutate(ranking_probabilities$null_probabilities, condition = "0 Winners") %>% 
+  filter(regimen %in% c("arm4", "arm5"),
+         nk < 60) %>% 
+  mutate(theta = paste0("$\\theta_{(", 6 - as.numeric(str_remove(regimen, "arm")), ")}$")) %>% 
+  mutate(theta = factor(theta, levels = paste0("$\\theta_{(", 5:1, ")}$"))) %>% 
+  group_by(regimen, nk) %>% 
+  mutate(median = median(p.subset.1)) %>% 
+  ggplot(aes(x = p.subset.1, fill = theta)) + 
+  geom_density(alpha = 0.6,
+               col = "white") + 
+  geom_segment(aes(x = median, xend = median, y = 0, yend = 2.5, col = theta, lty = regimen)) +
+  geom_point(aes(x = median, y = 0.1, bg = theta),
+             shape = 24,
+             size = 2,
+             col = "white") +
+  scale_fill_manual(values = ucsf_col_pal[1:5], 
+                    labels = TeX) +
+  scale_color_manual(values = ucsf_col_pal[1:5], 
+                     labels = TeX) +
+  scale_linetype_manual(values = c(2,3), 
+                        labels = TeX,
+                        guide = "none") +
+  facet_wrap(~nk, ncol = 1) + 
+  coord_cartesian(ylim = c(0,2.75)) +
+  scale_x_continuous(TeX("$\\Pr_{\\theta}(\\theta_k = \\theta_{(1)}|X)$")) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none",
+        legend.title = element_blank(),
+        legend.margin = margin(0,2,1,1),
+        legend.direction = "vertical",
+        axis.title.y = element_blank())
+
 p1 <- mutate(ranking_probabilities$even_probabilities, condition = "1 Winner") %>% 
   filter(regimen %in% c("arm4", "arm5"),
          nk < 60) %>% 
@@ -817,8 +853,9 @@ p3 <- mutate(ranking_probabilities$high_probabilities, condition = "4 Winners") 
         legend.direction = "vertical",
         axis.title.y = element_blank())
 
-p1 + p2 + p3 + 
-  plot_annotation(tag_levels = "A") 
+p1 + p2 + p3 + p0 + 
+  plot_annotation(tag_levels = "A") +
+  plot_layout(ncol = 4)
 ```
 
 ```{r eval = FALSE}
@@ -828,9 +865,10 @@ ggsave(filename = here("graphs", "submission", "fig-05_density-plot_prob-steepes
        height = 5,
        units = "in")
 
-p1 + p2 + p3 + 
+p1 + p2 + p3 + p0 + 
   plot_annotation(tag_levels = "A",
-                  title = "Dufault Fig. 5 (Top)") 
+                  title = "Dufault Fig. 5 (Top)") +
+  plot_layout(ncol = 4)
 
 ggsave(filename = here("graphs", "submission", "fig-05_density-plot_prob-steepest_top-2_annotated.tiff"),
        device = "tiff",
@@ -2289,6 +2327,7 @@ data_shape_function <- function(relapse_data, relapse_regimen, true_slopes, tpp_
   out <- bind_rows(out1, out2, out3, out4)
   return(out)
 }
+
 
 d20 <- data_shape_function(relapse_data = s95.sit1.20,
                            relapse_regimen = "2", # Sub-optimal
