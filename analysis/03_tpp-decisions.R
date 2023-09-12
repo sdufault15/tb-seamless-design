@@ -8,7 +8,7 @@ source(here("lib", "target-product-profile-function.R"))
 
 # Data
 
-# # Null - NOT READY - Needs to be reworked
+# Null
 load(here("data","cleaned","2023-09-11_mcmc_random-intercept-random-slope_nk-no-winners.RData"))
 
 # Even
