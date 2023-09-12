@@ -34,7 +34,8 @@ compare_high <- future_map(mcmc_high,
   map_dfr(~.x, .id = "nk") %>% 
   mutate(condition = "High")
 
-comparisons <- bind_rows(compare_even,
+comparisons <- bind_rows(compare_null,
+                         compare_even,
                          compare_highlow,
                          compare_high)
 save(comparisons, file = here("data", "analyzed", "ranking",
