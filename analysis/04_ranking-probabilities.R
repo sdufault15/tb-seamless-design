@@ -7,7 +7,7 @@ source(here("lib","mcmc-rank-function.R"))
 # Data
 
 # Null
-load(here("data","cleaned","2023-09-11_mcmc_random-intercept-random-slope_nk-no-winners.RData"))
+load(here("data","cleaned","2023-09-12_mcmc_random-intercept-random-slope_nk-no-winners.RData"))
 
 # Even
 load(here("data","cleaned","2022-06-22_mcmc_random-intercept-random-slope_nk-20_even.RData"))
