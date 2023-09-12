@@ -34,7 +34,7 @@ install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOpt
 
 + `00_run-performance-analyses.R` This script sets up the analysis of the survival and TTP data for the 30, 40, 60, and 80 participant per arm datasets. In particular, this script is important to set up the target product profile thresholds, which will be used in the following scripts. 
     + `01_combining-mcmc-chains` Because the Bayesian analysis of the simulated data was split into 10 segments, this script simply takes those separate MCMC results and combines them into a more convenient object.
-      + input: `data/bayes-generated/[DATE]_simulated-lmm_random-slope_lod-25_nk-*_mcmc-*.RData`
+      + input: `data/bayes-generated/[DATE]_simulated-lmm_random-slope_lod-25_nk-*_mcmc-*.RData`, or for the null TTP setting, `data/bayes-generated/[DATE]_bayes-mcmc-results_no-winners_*.RData`
       + output: `data/cleaned/[DATE]_mcmc_random-intercept-random-slope_nk-*.RData`
     + `02_combining-modresults` Because the Bayesian analysis of the simulated data was split into 10 segments, this script simply takes those separate model results and combines them into a more convenient object.
       + input: `data/bayes-generated/[DATE]_simulated-lmm_random-slope_lod-25_nk-*_modresults-*.RData`
@@ -60,11 +60,11 @@ install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOpt
 ### docs
 
 + `simulation-results_full.Rmd` contains the simulation results for the random intercept, random slope simulated datasets. Also includes code for generating figures for the manuscript.
-  + 
+<!--
+     OUT OF DATE
 + `sample-study-design.html` describes the set-up for the simulated datasets
-+ `simulation-study-results.html` is the larger comprehensive file containing all analysis results from all simulated datasets
 + `simulation-overview.html` [NEEDS UPDATING] should contain an ADEMP map of the project
-+ `2022-03-10_simulation-study-results.html` old report containing information that was lost when OS updated
++ `walkthrough_target-product-profile.html` describes the use of the target product profile framework in this setting-->
 
 ### lib
 
