@@ -21,11 +21,11 @@ load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_6
 mcmc_mods_no_winners_600 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
 load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_700.RData"))
 mcmc_mods_no_winners_700 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_800.RData"))
+load(here("data", "bayes-generated", "2023-09-12_bayes-mcmc-results_no-winners_800.RData"))
 mcmc_mods_no_winners_800 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_900.RData"))
+load(here("data", "bayes-generated", "2023-09-12_bayes-mcmc-results_no-winners_900.RData"))
 mcmc_mods_no_winners_900 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
-# load(here("data", "bayes-generated", "2023-09-09_bayes-mcmc-results_no-winners_1000.RData"))
+load(here("data", "bayes-generated", "2023-09-12_bayes-mcmc-results_no-winners_1000.RData"))
 mcmc_mods_no_winners_1000 <- mcmc_mods_no_winners; rm(mcmc_mods_no_winners)
 
 # Objects of [N simulations] X [5 sample sizes] X [4000 x 5 arms posterior estimates]
@@ -36,14 +36,14 @@ mcmc_mods_no_winners <- c(mcmc_mods_no_winners_100,
                           mcmc_mods_no_winners_400,
                           mcmc_mods_no_winners_500,
                           mcmc_mods_no_winners_600,
-                          mcmc_mods_no_winners_700#,
-                          # mcmc_mods_no_winners_800,
-                          # mcmc_mods_no_winners_900,
-                          # mcmc_mods_no_winners_1000
+                          mcmc_mods_no_winners_700,
+                          mcmc_mods_no_winners_800,
+                          mcmc_mods_no_winners_900,
+                          mcmc_mods_no_winners_1000
                           )
-# 
-# assert_that(length(mcmc_mods_no_winners) == 1000)
-# 
+
+assert_that(length(mcmc_mods_no_winners) == 1000)
+
 save(mcmc_mods_no_winners,
      file = here("data", "cleaned", paste0(Sys.Date(), "_mcmc_random-intercept-random-slope_nk-no-winners.RData")))
 
