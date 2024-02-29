@@ -1,5 +1,7 @@
 # Phase IIB/C Seamless Design Simulation Study
 
+This repository contains all the code necessary to recreate the simulation study published in [A flexible multi-metric Bayesian framework for decision-making in Phase II multi-arm multi-stage studies](https://doi.org/10.1002/sim.9961) by Suzanne Dufault, Katie Rolfe, Angela Crook, and Patrick Phillips appearing in *Statistics in Medicine* (2023). The code has not been optimized, but should accurately return the results described in the paper.
+
 ## Files included in repository
 
 ### munge
